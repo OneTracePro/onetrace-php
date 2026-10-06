@@ -1,0 +1,46 @@
+{
+    "name": "onetracepro/onetrace-php",
+    "description": "PHP client for the OneTrace.pro customer data platform API: events, profiles, products, recommendations, segments, journeys and campaigns.",
+    "type": "library",
+    "license": "MIT",
+    "keywords": ["onetrace", "cdp", "customer data platform", "analytics", "tracking", "events", "marketing automation", "recommendations", "api client"],
+    "homepage": "https://onetrace.pro",
+    "support": {
+        "issues": "https://github.com/OneTracePro/onetrace-php/issues",
+        "source": "https://github.com/OneTracePro/onetrace-php",
+        "docs": "https://onetrace.pro/en/docs/api"
+    },
+    "require": {
+        "php": "^7.4 || ^8.0",
+        "ext-curl": "*",
+        "ext-json": "*"
+    },
+    "require-dev": {
+        "nyholm/psr7": "^1.8",
+        "phpstan/phpstan": "^2.1",
+        "phpunit/phpunit": "^9.6",
+        "psr/http-client": "^1.0",
+        "psr/http-factory": "^1.0"
+    },
+    "suggest": {
+        "psr/http-client-implementation": "Send requests through your own PSR-18 client (Guzzle, Symfony HttpClient) instead of cURL"
+    },
+    "autoload": {
+        "psr-4": {
+            "OneTrace\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "OneTrace\\Tests\\": "tests/"
+        }
+    },
+    "config": {
+        "sort-packages": true
+    },
+    "scripts": {
+        "test": "phpunit",
+        "analyse": "phpstan analyse --memory-limit=512M",
+        "check": ["@analyse", "@test"]
+    }
+}

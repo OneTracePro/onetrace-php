@@ -1,0 +1,7 @@
+parameters:
+    level: 9
+    phpVersion:
+        min: 70400
+        max: 80599
+    paths:
+        - src

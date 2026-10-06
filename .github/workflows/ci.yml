@@ -1,0 +1,70 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+  schedule:
+    # Weekly: the library must cover every operation of the live API specification.
+    - cron: '0 6 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  tests:
+    name: PHP ${{ matrix.php }}${{ matrix.lowest && ' (lowest deps)' || '' }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['7.4', '8.0', '8.1', '8.2', '8.3', '8.4', '8.5']
+        lowest: [false]
+        include:
+          - php: '7.4'
+            lowest: true
+    steps:
+      - uses: actions/checkout@v5
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: curl, json
+          coverage: none
+          tools: composer:v2
+      - name: Install dependencies
+        run: composer update --no-interaction --no-progress ${{ matrix.lowest && '--prefer-lowest --prefer-stable' || '' }}
+      - name: Tests
+        run: vendor/bin/phpunit
+
+  static-analysis:
+    name: PHPStan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          coverage: none
+          tools: composer:v2
+      - run: composer validate --strict
+      - run: composer update --no-interaction --no-progress
+      - run: vendor/bin/phpstan analyse --memory-limit=512M --no-progress
+
+  api-specification:
+    name: Live API specification
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          coverage: none
+          tools: composer:v2
+      - run: composer update --no-interaction --no-progress
+      - name: Every operation of the live specification has a method
+        run: vendor/bin/phpunit --filter OperationsTest
+        env:
+          ONETRACE_SPEC_URL: https://cdp.onetrace.pro/api/v1/openapi.json

@@ -1,0 +1,4927 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "OneTrace.pro API",
+    "version": "1.0.0",
+    "description": "Public API v1: event ingestion (write keys) and project management (secret keys with permissions). Errors are `{\"message\": \"...\"}`; validation errors add `errors` by field path. Lists use cursor pagination (`limit` 1-200, `cursor` from `next_cursor`). POST requests accept an `Idempotency-Key` header: a repeat with the same key and body returns the stored response for 24 hours. Rate limits: 6000 requests/min per write key, 1200 requests/min per secret key (`429`). Error messages follow `Accept-Language` (en, ru, de, es, fr, it, pt, tr, uz, zh), otherwise the platform default language."
+  },
+  "servers": [
+    {
+      "url": "/api/v1"
+    }
+  ],
+  "paths": {
+    "/track": {
+      "post": {
+        "operationId": "ingest.track",
+        "summary": "Track an event",
+        "tags": [
+          "ingest"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Message"
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "writeKey": []
+          },
+          {
+            "secretKey": []
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Accepted for asynchronous processing",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "accepted": {
+                      "type": "integer"
+                    },
+                    "duplicates": {
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "413": {
+            "$ref": "#/components/responses/PayloadTooLarge"
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationError"
+          }
+        }
+      }
+    },
+    "/identify": {
+      "post": {
+        "operationId": "ingest.identify",
+        "summary": "Identify a profile and update traits",
+        "tags": [
+          "ingest"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Message"
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "writeKey": []
+          },
+          {
+            "secretKey": []
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Accepted for asynchronous processing",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "accepted": {
+                      "type": "integer"
+                    },
+                    "duplicates": {
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "413": {
+            "$ref": "#/components/responses/PayloadTooLarge"
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationError"
+          }
+        }
+      }
+    },
+    "/page": {
+      "post": {
+        "operationId": "ingest.page",
+        "summary": "Track a page view",
+        "tags": [
+          "ingest"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Message"
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "writeKey": []
+          },
+          {
+            "secretKey": []
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Accepted for asynchronous processing",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "accepted": {
+                      "type": "integer"
+                    },
+                    "duplicates": {
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "413": {
+            "$ref": "#/components/responses/PayloadTooLarge"
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationError"
+          }
+        }
+      }
+    },
+    "/alias": {
+      "post": {
+        "operationId": "ingest.alias",
+        "summary": "Link a previous identifier to a user",
+        "tags": [
+          "ingest"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Message"
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "writeKey": []
+          },
+          {
+            "secretKey": []
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Accepted for asynchronous processing",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "accepted": {
+                      "type": "integer"
+                    },
+                    "duplicates": {
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "413": {
+            "$ref": "#/components/responses/PayloadTooLarge"
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationError"
+          }
+        }
+      }
+    },
+    "/batch": {
+      "post": {
+        "operationId": "ingest.batch",
+        "summary": "Send up to 500 messages at once",
+        "tags": [
+          "ingest"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "batch"
+                ],
+                "properties": {
+                  "batch": {
+                    "type": "array",
+                    "maxItems": 500,
+                    "items": {
+                      "$ref": "#/components/schemas/Message"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "writeKey": []
+          },
+          {
+            "secretKey": []
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Accepted for asynchronous processing",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "accepted": {
+                      "type": "integer"
+                    },
+                    "duplicates": {
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "413": {
+            "$ref": "#/components/responses/PayloadTooLarge"
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationError"
+          }
+        }
+      }
+    },
+    "/push/config": {
+      "get": {
+        "operationId": "push.config",
+        "summary": "VAPID public key for PushManager.subscribe()",
+        "tags": [
+          "push"
+        ],
+        "security": [
+          {
+            "writeKey": []
+          },
+          {
+            "secretKey": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Public key of the project's Web Push integration",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "public_key"
+                  ],
+                  "properties": {
+                    "public_key": {
+                      "type": "string",
+                      "description": "base64url, 65-byte uncompressed P-256 point"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/push/subscriptions": {
+      "post": {
+        "operationId": "push.subscribe",
+        "summary": "Store a browser push subscription and link it to the visitor",
+        "tags": [
+          "push"
+        ],
+        "security": [
+          {
+            "writeKey": []
+          },
+          {
+            "secretKey": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "subscription"
+                ],
+                "properties": {
+                  "anonymousId": {
+                    "type": "string",
+                    "maxLength": 255,
+                    "description": "Required without userId"
+                  },
+                  "userId": {
+                    "type": "string",
+                    "maxLength": 255
+                  },
+                  "publicKey": {
+                    "type": "string",
+                    "description": "VAPID key the subscription was created with"
+                  },
+                  "subscription": {
+                    "type": "object",
+                    "required": [
+                      "endpoint",
+                      "keys"
+                    ],
+                    "description": "PushSubscription.toJSON(); the endpoint must belong to a browser push service",
+                    "properties": {
+                      "endpoint": {
+                        "type": "string",
+                        "format": "uri"
+                      },
+                      "expirationTime": {
+                        "type": [
+                          "integer",
+                          "null"
+                        ]
+                      },
+                      "keys": {
+                        "type": "object",
+                        "required": [
+                          "p256dh",
+                          "auth"
+                        ],
+                        "properties": {
+                          "p256dh": {
+                            "type": "string"
+                          },
+                          "auth": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Subscription stored; consent is recorded once the profile is processed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "subscription_id": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      },
+      "delete": {
+        "operationId": "push.unsubscribe",
+        "summary": "Forget a browser push subscription",
+        "tags": [
+          "push"
+        ],
+        "security": [
+          {
+            "writeKey": []
+          },
+          {
+            "secretKey": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "endpoint"
+                ],
+                "properties": {
+                  "endpoint": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Whether a subscription was removed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "deleted": {
+                      "type": "boolean"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/recommendations": {
+      "get": {
+        "operationId": "recommendations.get",
+        "summary": "Product recommendations for the site",
+        "tags": [
+          "recommendations"
+        ],
+        "description": "Write key (tracker). Personal and recently viewed recommendations use the profile of `anonymousId` only. Only available products are returned.",
+        "security": [
+          {
+            "writeKey": []
+          },
+          {
+            "secretKey": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "type",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "personal",
+                "popular",
+                "trending",
+                "viewed_with",
+                "bought_with",
+                "similar",
+                "recently_viewed"
+              ]
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 24,
+              "default": 8
+            }
+          },
+          {
+            "name": "item",
+            "in": "query",
+            "description": "Context product id (or item[] for a cart) for viewed_with, bought_with, similar.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "category",
+            "in": "query",
+            "description": "Category id for popular and trending.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "exclude[]",
+            "in": "query",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          {
+            "name": "anonymousId",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "image_width",
+            "in": "query",
+            "description": "Card image width (image), px. Variants for <picture> are in srcset when imgproxy is configured (ADR-047).",
+            "schema": {
+              "type": "integer",
+              "minimum": 64,
+              "maximum": 1200,
+              "default": 480
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Recommended products",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "request_id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/ProductCard"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationError"
+          }
+        }
+      }
+    },
+    "/openapi.json": {
+      "get": {
+        "operationId": "meta.openapi",
+        "summary": "This OpenAPI specification",
+        "tags": [
+          "meta"
+        ],
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/profiles/{type}/{value}": {
+      "get": {
+        "operationId": "profiles.show",
+        "summary": "Get a profile by any identifier",
+        "tags": [
+          "profiles"
+        ],
+        "description": "Traits and identifiers are masked unless the key has `profiles.pii`.\n\nRequires key permission(s): `profiles.read`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdentityType"
+          },
+          {
+            "$ref": "#/components/parameters/IdentityValue"
+          }
+        ],
+        "security": [
+          {
+            "secretKey": []
+          }
+        ],
+        "x-required-scopes": [
+          "profiles.read"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Profile"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationError"
+          }
+        }
+      },
+      "delete": {
+        "operationId": "profiles.destroy",
+        "summary": "Erase a profile and all profiles merged into it (GDPR)",
+        "tags": [
+          "profiles"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdentityType"
+          },
+          {
+            "$ref": "#/components/parameters/IdentityValue"
+          }
+        ],
+        "security": [
+          {
+            "secretKey": []
+          }
+        ],
+        "x-required-scopes": [
+          "profiles.delete"
+        ],
+        "description": "Requires key permission(s): `profiles.delete`.",
+        "responses": {
+          "204": {
+            "description": "Erased"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/profiles/{type}/{value}/events": {
+      "get": {
+        "operationId": "profiles.events",
+        "summary": "Profile events, newest first, 50 per page",
+        "tags": [
+          "profiles"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdentityType"
+          },
+          {
+            "$ref": "#/components/parameters/IdentityValue"
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "description": "Cursor: `next_before` of the previous page."
+          },
+          {
+            "name": "name",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "secretKey": []
+          }
+        ],
+        "x-required-scopes": [
+          "profiles.read"
+        ],
+        "description": "Requires key permission(s): `profiles.read`.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Event"
+                      }
+                    },
+                    "next_before": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "format": "date-time"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/profiles/{type}/{value}/consents": {
+      "put": {
+        "operationId": "profiles.consents",
+        "summary": "Subscribe or unsubscribe a profile",
+        "tags": [
+          "profiles"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdentityType"
+          },
+          {
+            "$ref": "#/components/parameters/IdentityValue"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "channel",
+                  "status"
+                ],
+                "properties": {
+                  "channel": {
+                    "type": "string",
+                    "example": "email"
+                  },
+                  "topic": {
+                    "type": "string",
+                    "description": "Omit for the whole channel (`all`)."
+                  },
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "subscribed",
+                      "unsubscribed"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "secretKey": []
+          }
+        ],
+        "x-required-scopes": [
+          "profiles.write"
+        ],
+        "description": "Requires key permission(s): `profiles.write`.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationError"
+          }
+        }
+      }
+    },
+    "/telegram/link": {
+      "post": {
+        "operationId": "profiles.telegramLink",
+        "summary": "Create a Telegram deep link for a profile",
+        "tags": [
+          "profiles"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "identity"
+                ],
+                "properties": {
+                  "identity": {
+                    "$ref": "#/components/schemas/IdentityRef"
+                  },
+                  "integration": {
+                    "type": "string",
+                    "description": "Integration uid when the project has several bots."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "secretKey": []
+          }
+        ],
+        "x-required-scopes": [
+          "profiles.write"
+        ],
+        "description": "Requires key permission(s): `profiles.write`.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "url": {
+                      "type": "string"
+                    },
+                    "token": {
+                      "type": "string"
+                    },
+                    "integration": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationError"
+          }
+        }
+      }
+    },
+    "/viber/link": {
+      "post": {
+        "operationId": "profiles.viberLink",
+        "summary": "Create a Viber bot deep link for a profile",
+        "tags": [
+          "profiles"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "identity"
+                ],
+                "properties": {
+                  "identity": {
+                    "$ref": "#/components/schemas/IdentityRef"
+                  },
+                  "integration": {
+                    "type": "string",
+                    "description": "Integration uid when the project has several Viber bots."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "secretKey": []
+          }
+        ],
+        "x-required-scopes": [
+          "profiles.write"
+        ],
+        "description": "Requires key permission(s): `profiles.write`.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "url": {
+                      "type": "string"
+                    },
+                    "token": {
+                      "type": "string"
+                    },
+                    "integration": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationError"
+          }
+        }
+      }
+    },
+    "/products": {
+      "post": {
+        "operationId": "products.upsert",
+        "summary": "Create or update products and categories",
+        "tags": [
+          "products"
+        ],
+        "security": [
+          {
+            "secretKey": []
+          }
+        ],
+        "x-required-scopes": [
+          "products.write"
+        ],
+        "description": "Requires key permission(s): `products.write`. Up to 1000 items per request.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "items"
+                ],
+                "properties": {
+                  "items": {
+                    "type": "array",
+                    "maxItems": 1000,
+                    "items": {
+                      "$ref": "#/components/schemas/ProductInput"
+                    }
+                  },
+                  "categories": {
+                    "type": "array",
+                    "maxItems": 1000,
+                    "items": {
+                      "type": "object",
+                      "required": [
+                        "id",
+                        "name"
+                      ],
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "parent_id": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Saved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "saved": {
+                      "type": "integer"
+                    },
+                    "categories": {
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationError"
+          }
+        }
+      },
+      "delete": {
+        "operationId": "products.delete",
+        "summary": "Delete products",
+        "tags": [
+          "products"
+        ],
+        "security": [
+          {
+            "secretKey": []
+          }
+        ],
+        "x-required-scopes": [
+          "products.write"
+        ],
+        "description": "Requires key permission(s): `products.write`.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "ids"
+                ],
+                "properties": {
+                  "ids": {
+                    "type": "array",
+                    "minItems": 1,
+                    "maxItems": 1000,
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Deleted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "deleted": {
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationError"
+          }
+        }
+      }
+    },
+    "/catalog/events": {
+      "get": {
+        "operationId": "catalog.events",
+        "summary": "Events seen in the project with their properties",
+        "tags": [
+          "catalog"
+        ],
+        "security": [
+          {
+            "secretKey": []
+          }
+        ],
+        "x-required-scopes": [
+          "events.read"
+        ],
+        "description": "Requires key permission(s): `events.read`.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/CatalogEvent"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/catalog/traits": {
+      "get": {
+        "operationId": "catalog.traits",
+        "summary": "Profile traits of the project",
+        "tags": [
+          "catalog"
+        ],
+        "security": [
+          {
+            "secretKey": []
+          }
+        ],
+        "x-required-scopes": [
+          "events.read"
+        ],
+        "description": "Requires key permission(s): `events.read`.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/CatalogTrait"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/segments": {
+      "get": {
+        "operationId": "segments.index",
+        "summary": "List segments",
+        "tags": [
+          "segments"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Limit"
+          },
+          {
+            "$ref": "#/components/parameters/Cursor"
+          }
+        ],
+        "security": [
+          {
+            "secretKey": []
+          }
+        ],
+        "x-required-scopes": [
+          "segments.read"
+        ],
+        "description": "Requires key permission(s): `segments.read`.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "data",
+                    "next_cursor"
+                  ],
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Segment"
+                      }
+                    },
+                    "next_cursor": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "description": "Pass as `cursor` to get the next page; null on the last page."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      },
+      "post": {
+        "operationId": "segments.store",
+        "summary": "Create a segment",
+        "tags": [
+          "segments"
+        ],
+        "description": "Dynamic segments are computed asynchronously; poll `status`. Rules use the same DSL as the segment builder (docs/architecture/segmentation.md).\n\nRequires key permission(s): `segments.write`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SegmentInput"
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "secretKey": []
+          }
+        ],
+        "x-required-scopes": [
+          "segments.write"
+        ],
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SegmentDetail"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationError"
+          }
+        }
+      }
+    },
+    "/segments/{segment}": {
+      "get": {
+        "operationId": "segments.show",
+        "summary": "Get a segment with its rules",
+        "tags": [
+          "segments"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/SegmentId"
+          }
+        ],
+        "security": [
+          {
+            "secretKey": []
+          }
+        ],
+        "x-required-scopes": [
+          "segments.read"
+        ],
+        "description": "Requires key permission(s): `segments.read`.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SegmentDetail"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      },
+      "patch": {
+        "operationId": "segments.update",
+        "summary": "Update a segment (partial)",
+        "tags": [
+          "segments"
+        ],
+        "description": "Changing rules of a dynamic segment queues a recomputation.\n\nRequires key permission(s): `segments.write`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/SegmentId"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SegmentPatch"
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "secretKey": []
+          }
+        ],
+        "x-required-scopes": [
+          "segments.write"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SegmentDetail"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationError"
+          }
+        }
+      },
+      "delete": {
+        "operationId": "segments.destroy",
+        "summary": "Delete a segment",
+        "tags": [
+          "segments"
+        ],
+        "description": "Fails with 422 while other segments reference it.\n\nRequires key permission(s): `segments.write`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/SegmentId"
+          }
+        ],
+        "security": [
+          {
+            "secretKey": []
+          }
+        ],
+        "x-required-scopes": [
+          "segments.write"
+        ],
+        "responses": {
+          "204": {
+            "description": "Deleted"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationError"
+          }
+        }
+      }
+    },
+    "/segments/{segment}/compute": {
+      "post": {
+        "operationId": "segments.compute",
+        "summary": "Queue a recomputation of a dynamic segment",
+        "tags": [
+          "segments"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/SegmentId"
+          }
+        ],
+        "security": [
+          {
+            "secretKey": []
+          }
+        ],
+        "x-required-scopes": [
+          "segments.write"
+        ],
+        "description": "Requires key permission(s): `segments.write`.",
+        "responses": {
+          "202": {
+            "description": "Queued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "queued": {
+                      "type": "boolean"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "422": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/segments/{segment}/members": {
+      "get": {
+        "operationId": "segments.members",
+        "summary": "Segment members, latest entered first",
+        "tags": [
+          "segments"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/SegmentId"
+          },
+          {
+            "$ref": "#/components/parameters/Limit"
+          },
+          {
+            "$ref": "#/components/parameters/Cursor"
+          }
+        ],
+        "security": [
+          {
+            "secretKey": []
+          }
+        ],
+        "x-required-scopes": [
+          "segments.read"
+        ],
+        "description": "Requires key permission(s): `segments.read`.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "data",
+                    "next_cursor"
+                  ],
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "profile_id": {
+                            "type": "integer"
+                          },
+                          "entered_at": {
+                            "type": "string",
+                            "format": "date-time"
+                          }
+                        }
+                      }
+                    },
+                    "next_cursor": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "description": "Pass as `cursor` to get the next page; null on the last page."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      },
+      "post": {
+        "operationId": "segments.addMembers",
+        "summary": "Add profiles to a static segment",
+        "tags": [
+          "segments"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/SegmentId"
+          },
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/IdentitiesInput"
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "secretKey": []
+          }
+        ],
+        "x-required-scopes": [
+          "segments.write"
+        ],
+        "description": "Requires key permission(s): `segments.write`.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "added": {
+                      "type": "integer"
+                    },
+                    "unknown": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/IdentityRef"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationError"
+          }
+        }
+      },
+      "delete": {
+        "operationId": "segments.removeMembers",
+        "summary": "Remove profiles from a static segment",
+        "tags": [
+          "segments"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/SegmentId"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/IdentitiesInput"
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "secretKey": []
+          }
+        ],
+        "x-required-scopes": [
+          "segments.write"
+        ],
+        "description": "Requires key permission(s): `segments.write`.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "removed": {
+                      "type": "integer"
+                    },
+                    "unknown": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/IdentityRef"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationError"
+          }
+        }
+      }
+    },
+    "/segments/{segment}/members/{type}/{value}": {
+      "get": {
+        "operationId": "segments.membership",
+        "summary": "Whether a profile is a member",
+        "tags": [
+          "segments"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/SegmentId"
+          },
+          {
+            "$ref": "#/components/parameters/IdentityType"
+          },
+          {
+            "$ref": "#/components/parameters/IdentityValue"
+          }
+        ],
+        "security": [
+          {
+            "secretKey": []
+          }
+        ],
+        "x-required-scopes": [
+          "segments.read"
+        ],
+        "description": "Requires key permission(s): `segments.read`.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "profile_id": {
+                      "type": "integer"
+                    },
+                    "member": {
+                      "type": "boolean"
+                    },
+                    "entered_at": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "format": "date-time"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/journeys": {
+      "get": {
+        "operationId": "journeys.index",
+        "summary": "List journeys",
+        "tags": [
+          "journeys"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Limit"
+          },
+          {
+            "$ref": "#/components/parameters/Cursor"
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "draft",
+                "active",
+                "paused",
+                "archived"
+              ]
+            }
+          }
+        ],
+        "security": [
+          {
+            "secretKey": []
+          }
+        ],
+        "x-required-scopes": [
+          "journeys.read"
+        ],
+        "description": "Requires key permission(s): `journeys.read`.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "data",
+                    "next_cursor"
+                  ],
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Journey"
+                      }
+                    },
+                    "next_cursor": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "description": "Pass as `cursor` to get the next page; null on the last page."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      },
+      "post": {
+        "operationId": "journeys.store",
+        "summary": "Create a journey draft",
+        "tags": [
+          "journeys"
+        ],
+        "description": "The draft may be incomplete; it is validated on publish. Graph and entry use the editor format (docs/architecture/journeys.md).\n\nRequires key permission(s): `journeys.write`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/JourneyInput"
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "secretKey": []
+          }
+        ],
+        "x-required-scopes": [
+          "journeys.write"
+        ],
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JourneyDetail"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationError"
+          }
+        }
+      }
+    },
+    "/journeys/{journey}": {
+      "get": {
+        "operationId": "journeys.show",
+        "summary": "Get a journey with its draft and published version",
+        "tags": [
+          "journeys"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/JourneyId"
+          }
+        ],
+        "security": [
+          {
+            "secretKey": []
+          }
+        ],
+        "x-required-scopes": [
+          "journeys.read"
+        ],
+        "description": "Requires key permission(s): `journeys.read`.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JourneyDetail"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      },
+      "patch": {
+        "operationId": "journeys.update",
+        "summary": "Update the draft (partial)",
+        "tags": [
+          "journeys"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/JourneyId"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/JourneyPatch"
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "secretKey": []
+          }
+        ],
+        "x-required-scopes": [
+          "journeys.write"
+        ],
+        "description": "Requires key permission(s): `journeys.write`.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JourneyDetail"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationError"
+          }
+        }
+      }
+    },
+    "/journeys/{journey}/validate": {
+      "post": {
+        "operationId": "journeys.validate",
+        "summary": "Validate the draft without publishing",
+        "tags": [
+          "journeys"
+        ],
+        "description": "422 lists errors by path, e.g. `graph.nodes.2.data.template_id`.\n\nRequires key permission(s): `journeys.read`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/JourneyId"
+          }
+        ],
+        "security": [
+          {
+            "secretKey": []
+          }
+        ],
+        "x-required-scopes": [
+          "journeys.read"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "valid": {
+                      "type": "boolean"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationError"
+          }
+        }
+      }
+    },
+    "/journeys/{journey}/publish": {
+      "post": {
+        "operationId": "journeys.publish",
+        "summary": "Publish the draft as a new version",
+        "tags": [
+          "journeys"
+        ],
+        "description": "First publish activates the journey and counts towards the plan's active journeys limit.\n\nRequires key permission(s): `journeys.publish`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/JourneyId"
+          },
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "security": [
+          {
+            "secretKey": []
+          }
+        ],
+        "x-required-scopes": [
+          "journeys.publish"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JourneyDetail"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationError"
+          }
+        }
+      }
+    },
+    "/journeys/{journey}/pause": {
+      "post": {
+        "operationId": "journeys.pause",
+        "summary": "Pause: no new entries, participants stay",
+        "tags": [
+          "journeys"
+        ],
+        "description": "Body `{\"exit_all\": true}` also exits all participants. Only active journeys.\n\nRequires key permission(s): `journeys.publish`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/JourneyId"
+          },
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "exit_all": {
+                    "type": "boolean"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "secretKey": []
+          }
+        ],
+        "x-required-scopes": [
+          "journeys.publish"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Journey"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationError"
+          }
+        }
+      }
+    },
+    "/journeys/{journey}/resume": {
+      "post": {
+        "operationId": "journeys.resume",
+        "summary": "Resume a paused journey",
+        "tags": [
+          "journeys"
+        ],
+        "description": "Counts towards the active journeys limit.\n\nRequires key permission(s): `journeys.publish`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/JourneyId"
+          },
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "security": [
+          {
+            "secretKey": []
+          }
+        ],
+        "x-required-scopes": [
+          "journeys.publish"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Journey"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationError"
+          }
+        }
+      }
+    },
+    "/journeys/{journey}/archive": {
+      "post": {
+        "operationId": "journeys.archive",
+        "summary": "Archive: all participants exit",
+        "tags": [
+          "journeys"
+        ],
+        "description": "Irreversible.\n\nRequires key permission(s): `journeys.publish`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/JourneyId"
+          },
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "security": [
+          {
+            "secretKey": []
+          }
+        ],
+        "x-required-scopes": [
+          "journeys.publish"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Journey"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationError"
+          }
+        }
+      }
+    },
+    "/journeys/{journey}/enrollments": {
+      "get": {
+        "operationId": "journeys.enrollments",
+        "summary": "Journey participations, newest first",
+        "tags": [
+          "journeys"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/JourneyId"
+          },
+          {
+            "$ref": "#/components/parameters/Limit"
+          },
+          {
+            "$ref": "#/components/parameters/Cursor"
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "active",
+                "waiting",
+                "completed",
+                "exited",
+                "failed"
+              ]
+            }
+          }
+        ],
+        "security": [
+          {
+            "secretKey": []
+          }
+        ],
+        "x-required-scopes": [
+          "journeys.read"
+        ],
+        "description": "Requires key permission(s): `journeys.read`.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "data",
+                    "next_cursor"
+                  ],
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Enrollment"
+                      }
+                    },
+                    "next_cursor": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "description": "Pass as `cursor` to get the next page; null on the last page."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/journeys/{journey}/report": {
+      "get": {
+        "operationId": "journeys.report",
+        "summary": "Funnel, goals and A/B branches for a period",
+        "tags": [
+          "journeys"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/JourneyId"
+          },
+          {
+            "name": "period",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "enum": [
+                7,
+                30,
+                90
+              ],
+              "default": 30
+            }
+          }
+        ],
+        "security": [
+          {
+            "secretKey": []
+          }
+        ],
+        "x-required-scopes": [
+          "journeys.read",
+          "analytics.read"
+        ],
+        "description": "Requires key permission(s): `journeys.read`, `analytics.read`.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "description": "See docs/architecture/analytics.md#отчёт-по-цепочке."
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/journeys/{journey}/enroll": {
+      "post": {
+        "operationId": "journeys.enroll",
+        "summary": "Enroll a profile into a journey with the API trigger",
+        "tags": [
+          "journeys"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/JourneyId"
+          },
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "identity"
+                ],
+                "properties": {
+                  "identity": {
+                    "$ref": "#/components/schemas/IdentityRef"
+                  },
+                  "data": {
+                    "type": "object",
+                    "description": "Available in templates as `context.data`."
+                  },
+                  "idempotency_key": {
+                    "type": "string",
+                    "maxLength": 150
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "secretKey": []
+          }
+        ],
+        "x-required-scopes": [
+          "journeys.write"
+        ],
+        "description": "Requires key permission(s): `journeys.write`.",
+        "responses": {
+          "201": {
+            "description": "Enrolled",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EnrollResult"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "Not enrolled (repeat key, re-entry policy, audience or limit)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EnrollResult"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationError"
+          }
+        }
+      }
+    },
+    "/campaigns": {
+      "get": {
+        "operationId": "campaigns.index",
+        "summary": "List campaigns",
+        "tags": [
+          "campaigns"
+        ],
+        "description": "Requires key permission(s): `campaigns.read`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Limit"
+          },
+          {
+            "$ref": "#/components/parameters/Cursor"
+          }
+        ],
+        "security": [
+          {
+            "secretKey": []
+          }
+        ],
+        "x-required-scopes": [
+          "campaigns.read"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "data",
+                    "next_cursor"
+                  ],
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Campaign"
+                      }
+                    },
+                    "next_cursor": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "description": "Pass as `cursor` to get the next page; null on the last page."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      },
+      "post": {
+        "operationId": "campaigns.store",
+        "summary": "Create a campaign draft",
+        "tags": [
+          "campaigns"
+        ],
+        "description": "The draft may be incomplete; readiness is checked on schedule.\n\nRequires key permission(s): `campaigns.write`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CampaignInput"
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "secretKey": []
+          }
+        ],
+        "x-required-scopes": [
+          "campaigns.write"
+        ],
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Campaign"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationError"
+          }
+        }
+      }
+    },
+    "/campaigns/{campaign}": {
+      "get": {
+        "operationId": "campaigns.show",
+        "summary": "Get a campaign",
+        "tags": [
+          "campaigns"
+        ],
+        "description": "Requires key permission(s): `campaigns.read`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/CampaignId"
+          }
+        ],
+        "security": [
+          {
+            "secretKey": []
+          }
+        ],
+        "x-required-scopes": [
+          "campaigns.read"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Campaign"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      },
+      "patch": {
+        "operationId": "campaigns.update",
+        "summary": "Update a campaign (partial)",
+        "tags": [
+          "campaigns"
+        ],
+        "description": "Only draft, scheduled or paused campaigns; a scheduled campaign is re-checked and its next run recomputed.\n\nRequires key permission(s): `campaigns.write`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/CampaignId"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "description": "Any subset of CampaignInput fields.",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "maxLength": 120
+                  },
+                  "description": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "integration_id": {
+                    "type": [
+                      "integer",
+                      "null"
+                    ],
+                    "description": "Channel integration; the template of every variant must belong to its channel."
+                  },
+                  "audience": {
+                    "$ref": "#/components/schemas/CampaignAudience"
+                  },
+                  "variants": {
+                    "type": "array",
+                    "minItems": 1,
+                    "maxItems": 5,
+                    "items": {
+                      "$ref": "#/components/schemas/CampaignVariant"
+                    }
+                  },
+                  "ab": {
+                    "$ref": "#/components/schemas/CampaignAb"
+                  },
+                  "schedule": {
+                    "$ref": "#/components/schemas/CampaignSchedule"
+                  },
+                  "rate_per_minute": {
+                    "type": [
+                      "integer",
+                      "null"
+                    ],
+                    "minimum": 10,
+                    "maximum": 100000
+                  },
+                  "goal": {
+                    "$ref": "#/components/schemas/CampaignGoal"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "secretKey": []
+          }
+        ],
+        "x-required-scopes": [
+          "campaigns.write"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Campaign"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationError"
+          }
+        }
+      },
+      "delete": {
+        "operationId": "campaigns.destroy",
+        "summary": "Delete a campaign",
+        "tags": [
+          "campaigns"
+        ],
+        "description": "Fails with 422 while scheduled or sending: cancel it first.\n\nRequires key permission(s): `campaigns.write`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/CampaignId"
+          }
+        ],
+        "security": [
+          {
+            "secretKey": []
+          }
+        ],
+        "x-required-scopes": [
+          "campaigns.write"
+        ],
+        "responses": {
+          "204": {
+            "description": "Deleted"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationError"
+          }
+        }
+      }
+    },
+    "/campaigns/{campaign}/report": {
+      "get": {
+        "operationId": "campaigns.report",
+        "summary": "Campaign report: last runs with per-variant stats",
+        "tags": [
+          "campaigns"
+        ],
+        "description": "Requires key permission(s): `campaigns.read`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/CampaignId"
+          }
+        ],
+        "security": [
+          {
+            "secretKey": []
+          }
+        ],
+        "x-required-scopes": [
+          "campaigns.read"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "campaign": {
+                      "$ref": "#/components/schemas/Campaign"
+                    },
+                    "runs": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/CampaignRun"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/campaigns/{campaign}/schedule": {
+      "post": {
+        "operationId": "campaigns.schedule",
+        "summary": "Schedule (or launch) a campaign",
+        "tags": [
+          "campaigns"
+        ],
+        "description": "Draft or paused campaign without a paused run. Checks readiness (channel, templates, audience, goal, schedule); `now` starts within a minute.\n\nRequires key permission(s): `campaigns.send`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/CampaignId"
+          },
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "security": [
+          {
+            "secretKey": []
+          }
+        ],
+        "x-required-scopes": [
+          "campaigns.send"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Campaign"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationError"
+          }
+        }
+      }
+    },
+    "/campaigns/{campaign}/pause": {
+      "post": {
+        "operationId": "campaigns.pause",
+        "summary": "Pause a campaign",
+        "tags": [
+          "campaigns"
+        ],
+        "description": "The current run stops queueing messages; next runs do not start.\n\nRequires key permission(s): `campaigns.send`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/CampaignId"
+          },
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "security": [
+          {
+            "secretKey": []
+          }
+        ],
+        "x-required-scopes": [
+          "campaigns.send"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Campaign"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationError"
+          }
+        }
+      }
+    },
+    "/campaigns/{campaign}/resume": {
+      "post": {
+        "operationId": "campaigns.resume",
+        "summary": "Resume a paused campaign",
+        "tags": [
+          "campaigns"
+        ],
+        "description": "A paused run continues; otherwise the campaign is scheduled again.\n\nRequires key permission(s): `campaigns.send`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/CampaignId"
+          },
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "security": [
+          {
+            "secretKey": []
+          }
+        ],
+        "x-required-scopes": [
+          "campaigns.send"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Campaign"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationError"
+          }
+        }
+      }
+    },
+    "/campaigns/{campaign}/cancel": {
+      "post": {
+        "operationId": "campaigns.cancel",
+        "summary": "Cancel a campaign",
+        "tags": [
+          "campaigns"
+        ],
+        "description": "Unsent recipients of the current run do not get the message; recurring runs stop.\n\nRequires key permission(s): `campaigns.send`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/CampaignId"
+          },
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "security": [
+          {
+            "secretKey": []
+          }
+        ],
+        "x-required-scopes": [
+          "campaigns.send"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Campaign"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationError"
+          }
+        }
+      }
+    },
+    "/widgets/{uid}": {
+      "get": {
+        "operationId": "widgets.get",
+        "summary": "Website widget configured in the admin panel",
+        "tags": [
+          "recommendations"
+        ],
+        "description": "Write key (tracker renders <div data-cdp-widget=\"{uid}\">, ADR-048). Returns the widget settings and its products in one request; a paused widget returns no items. Personal recommendations use the profile of `anonymousId` only.",
+        "security": [
+          {
+            "writeKey": []
+          },
+          {
+            "secretKey": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "uid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-z0-9]{1,16}$"
+            }
+          },
+          {
+            "name": "item[]",
+            "in": "query",
+            "description": "Context product ids (data-item): page product or cart items.",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          {
+            "name": "category",
+            "in": "query",
+            "description": "Category id (data-category); overrides the widget category.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "exclude[]",
+            "in": "query",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          {
+            "name": "anonymousId",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Widget and products",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "widget": {
+                      "type": "object",
+                      "properties": {
+                        "uid": {
+                          "type": "string"
+                        },
+                        "type": {
+                          "type": "string"
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": [
+                            "active",
+                            "paused"
+                          ]
+                        },
+                        "settings": {
+                          "type": "object",
+                          "properties": {
+                            "title": {
+                              "type": "string"
+                            },
+                            "layout": {
+                              "type": "string",
+                              "enum": [
+                                "grid",
+                                "carousel"
+                              ]
+                            },
+                            "columns": {
+                              "type": "integer"
+                            },
+                            "accent": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "radius": {
+                              "type": "integer"
+                            },
+                            "button": {
+                              "type": "string"
+                            },
+                            "showPrice": {
+                              "type": "boolean"
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "request_id": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/ProductCard"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid key"
+          },
+          "403": {
+            "description": "Request origin is not one of the key website domains"
+          },
+          "404": {
+            "description": "Widget not found in the project"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "writeKey": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "`cdp_wk_…`: ingestion only. Also accepted as Basic auth user or `writeKey` body field."
+      },
+      "secretKey": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "`cdp_sk_…`: server-side only, permissions chosen when the key is created."
+      }
+    },
+    "parameters": {
+      "IdentityType": {
+        "name": "type",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "string",
+          "enum": [
+            "user_id",
+            "anonymous_id",
+            "email",
+            "phone",
+            "telegram_chat_id",
+            "web_push"
+          ]
+        }
+      },
+      "IdentityValue": {
+        "name": "value",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "string"
+        },
+        "description": "Normalized like at ingestion (lower-case email, E.164 phone)."
+      },
+      "SegmentId": {
+        "name": "segment",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "integer"
+        }
+      },
+      "JourneyId": {
+        "name": "journey",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "integer"
+        }
+      },
+      "Limit": {
+        "name": "limit",
+        "in": "query",
+        "schema": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 200,
+          "default": 50
+        }
+      },
+      "Cursor": {
+        "name": "cursor",
+        "in": "query",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "IdempotencyKey": {
+        "name": "Idempotency-Key",
+        "in": "header",
+        "schema": {
+          "type": "string",
+          "maxLength": 255
+        },
+        "description": "Repeat-safe retries: same key and body return the stored response (header `Idempotent-Replayed: true`); a different body gives 422; a request still in progress gives 409."
+      },
+      "CampaignId": {
+        "name": "campaign",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "integer"
+        }
+      }
+    },
+    "responses": {
+      "Unauthorized": {
+        "description": "Missing, invalid or revoked key",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "Forbidden": {
+        "description": "The key lacks the required permission or the brand is suspended",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "NotFound": {
+        "description": "Not found in the key's project",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "ValidationError": {
+        "description": "Validation failed",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ValidationError"
+            }
+          }
+        }
+      },
+      "TooManyRequests": {
+        "description": "Rate limit or monthly event quota exceeded",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "PayloadTooLarge": {
+        "description": "Body over 1 MB",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "Error": {
+        "description": "The request cannot be applied in the current state",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "required": [
+          "message"
+        ],
+        "properties": {
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "ValidationError": {
+        "type": "object",
+        "required": [
+          "message",
+          "errors"
+        ],
+        "properties": {
+          "message": {
+            "type": "string"
+          },
+          "errors": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "IdentityRef": {
+        "type": "object",
+        "required": [
+          "type",
+          "value"
+        ],
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "user_id",
+              "anonymous_id",
+              "email",
+              "phone",
+              "telegram_chat_id",
+              "web_push"
+            ]
+          },
+          "value": {
+            "type": "string",
+            "maxLength": 255
+          }
+        }
+      },
+      "IdentitiesInput": {
+        "type": "object",
+        "required": [
+          "identities"
+        ],
+        "properties": {
+          "identities": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 1000,
+            "items": {
+              "$ref": "#/components/schemas/IdentityRef"
+            }
+          }
+        }
+      },
+      "Message": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "track",
+              "identify",
+              "page",
+              "alias"
+            ]
+          },
+          "messageId": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "anonymousId": {
+            "type": [
+              "string",
+              "integer"
+            ]
+          },
+          "userId": {
+            "type": [
+              "string",
+              "integer"
+            ]
+          },
+          "previousId": {
+            "type": [
+              "string",
+              "integer"
+            ]
+          },
+          "event": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "name": {
+            "type": "string"
+          },
+          "properties": {
+            "type": "object"
+          },
+          "traits": {
+            "type": "object"
+          },
+          "context": {
+            "type": "object"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "Profile": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "traits": {
+            "type": "object"
+          },
+          "identities": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          "first_seen_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "last_seen_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "Event": {
+        "type": "object",
+        "properties": {
+          "event_id": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "properties": {
+            "type": "object"
+          },
+          "context": {
+            "type": "object"
+          },
+          "occurred_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "CatalogEvent": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "label": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "volume": {
+            "type": "integer"
+          },
+          "first_seen_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "last_seen_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "properties": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "key": {
+                  "type": "string"
+                },
+                "data_type": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      },
+      "CatalogTrait": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string"
+          },
+          "label": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "data_type": {
+            "type": "string"
+          },
+          "pii": {
+            "type": "boolean"
+          },
+          "system": {
+            "type": "boolean"
+          }
+        }
+      },
+      "Segment": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "dynamic",
+              "static"
+            ]
+          },
+          "realtime": {
+            "type": "boolean"
+          },
+          "schedule_minutes": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "computing",
+              "ready",
+              "failed"
+            ]
+          },
+          "size": {
+            "type": "integer"
+          },
+          "last_computed_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "SegmentDetail": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/Segment"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "rules": {
+                "type": [
+                  "object",
+                  "null"
+                ],
+                "description": "Rule tree: {\"op\": \"and|or\", \"children\": [...]}"
+              }
+            }
+          }
+        ]
+      },
+      "SegmentInput": {
+        "type": "object",
+        "required": [
+          "name",
+          "type"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 120
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "dynamic",
+              "static"
+            ]
+          },
+          "realtime": {
+            "type": "boolean"
+          },
+          "schedule_minutes": {
+            "type": "integer",
+            "enum": [
+              15,
+              30,
+              60,
+              180,
+              360,
+              720,
+              1440
+            ]
+          },
+          "rules": {
+            "type": "object"
+          }
+        }
+      },
+      "SegmentPatch": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 120
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "realtime": {
+            "type": "boolean"
+          },
+          "schedule_minutes": {
+            "type": "integer"
+          },
+          "rules": {
+            "type": "object"
+          }
+        }
+      },
+      "Journey": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "draft",
+              "active",
+              "paused",
+              "archived"
+            ]
+          },
+          "version": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "next_run_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "JourneyDetail": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/Journey"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "draft": {
+                "type": "object",
+                "properties": {
+                  "graph": {
+                    "type": "object"
+                  },
+                  "entry": {
+                    "type": "object"
+                  }
+                }
+              },
+              "published": {
+                "type": [
+                  "object",
+                  "null"
+                ],
+                "properties": {
+                  "graph": {
+                    "type": "object"
+                  },
+                  "entry": {
+                    "type": "object"
+                  }
+                }
+              }
+            }
+          }
+        ]
+      },
+      "JourneyInput": {
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 120
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "graph": {
+            "type": "object",
+            "properties": {
+              "nodes": {
+                "type": "array",
+                "maxItems": 200
+              },
+              "edges": {
+                "type": "array",
+                "maxItems": 400
+              }
+            }
+          },
+          "entry": {
+            "type": "object"
+          }
+        }
+      },
+      "JourneyPatch": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 120
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "graph": {
+            "type": "object"
+          },
+          "entry": {
+            "type": "object"
+          }
+        }
+      },
+      "Enrollment": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "profile_id": {
+            "type": "integer"
+          },
+          "version_id": {
+            "type": "integer"
+          },
+          "status": {
+            "type": "string"
+          },
+          "current_node_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "exit_reason": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "entered_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "finished_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "goal_reached_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          }
+        }
+      },
+      "EnrollResult": {
+        "type": "object",
+        "properties": {
+          "enrolled": {
+            "type": "boolean"
+          },
+          "enrollment_id": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "profile_id": {
+            "type": "integer"
+          }
+        }
+      },
+      "CampaignAudience": {
+        "type": "object",
+        "required": [
+          "segment_ids"
+        ],
+        "properties": {
+          "segment_ids": {
+            "type": "array",
+            "maxItems": 10,
+            "items": {
+              "type": "integer"
+            },
+            "description": "Members of any of these segments get the campaign."
+          },
+          "exclude_segment_ids": {
+            "type": "array",
+            "maxItems": 10,
+            "items": {
+              "type": "integer"
+            },
+            "description": "Members of these segments are excluded."
+          }
+        }
+      },
+      "CampaignVariant": {
+        "type": "object",
+        "required": [
+          "key",
+          "percent"
+        ],
+        "properties": {
+          "key": {
+            "type": "string",
+            "pattern": "^[a-z0-9_]{1,32}$"
+          },
+          "template_id": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "description": "Message template of the campaign channel."
+          },
+          "percent": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100,
+            "description": "Share of the audience (or of the A/B test share); all variants add up to 100."
+          }
+        }
+      },
+      "CampaignAb": {
+        "type": [
+          "object",
+          "null"
+        ],
+        "required": [
+          "test_percent",
+          "metric",
+          "wait"
+        ],
+        "description": "A/B test: `test_percent` of the audience is split between variants; after `wait` the rest gets the winner by `metric`.",
+        "properties": {
+          "test_percent": {
+            "type": "integer",
+            "minimum": 5,
+            "maximum": 50
+          },
+          "metric": {
+            "type": "string",
+            "enum": [
+              "opened",
+              "clicked",
+              "goal"
+            ]
+          },
+          "wait": {
+            "type": "object",
+            "properties": {
+              "amount": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 72
+              },
+              "unit": {
+                "type": "string",
+                "enum": [
+                  "hour",
+                  "day"
+                ]
+              }
+            }
+          }
+        }
+      },
+      "CampaignSchedule": {
+        "type": "object",
+        "required": [
+          "type"
+        ],
+        "description": "Times are wall-clock in the project time zone; with `local_time` — in each recipient's `timezone` trait.",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "now",
+              "at",
+              "recurring"
+            ]
+          },
+          "at": {
+            "type": "string",
+            "example": "2026-11-01T10:00",
+            "description": "For `at`: Y-m-d\\TH:i."
+          },
+          "repeat": {
+            "type": "string",
+            "enum": [
+              "daily",
+              "weekly",
+              "monthly"
+            ]
+          },
+          "time": {
+            "type": "string",
+            "example": "10:00"
+          },
+          "weekdays": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 7
+            },
+            "description": "ISO weekdays for `weekly` (1 = Monday)."
+          },
+          "day_of_month": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 28
+          },
+          "start_date": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date"
+          },
+          "end_date": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date"
+          },
+          "local_time": {
+            "type": "boolean"
+          }
+        }
+      },
+      "CampaignGoal": {
+        "type": [
+          "object",
+          "null"
+        ],
+        "required": [
+          "event",
+          "within"
+        ],
+        "description": "Conversion: the event from the recipient within the window after sending.",
+        "properties": {
+          "event": {
+            "type": "string"
+          },
+          "within": {
+            "type": "object",
+            "properties": {
+              "amount": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 90
+              },
+              "unit": {
+                "type": "string",
+                "enum": [
+                  "hour",
+                  "day"
+                ]
+              }
+            }
+          }
+        }
+      },
+      "Campaign": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "draft",
+              "scheduled",
+              "sending",
+              "sent",
+              "paused",
+              "cancelled"
+            ]
+          },
+          "integration_id": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "channel": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "audience": {
+            "$ref": "#/components/schemas/CampaignAudience"
+          },
+          "variants": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CampaignVariant"
+            }
+          },
+          "ab": {
+            "$ref": "#/components/schemas/CampaignAb"
+          },
+          "schedule": {
+            "$ref": "#/components/schemas/CampaignSchedule"
+          },
+          "rate_per_minute": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "goal": {
+            "$ref": "#/components/schemas/CampaignGoal"
+          },
+          "next_run_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "last_run_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "CampaignInput": {
+        "type": "object",
+        "required": [
+          "name",
+          "audience",
+          "variants",
+          "schedule"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 120
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "integration_id": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "description": "Channel integration; the template of every variant must belong to its channel."
+          },
+          "audience": {
+            "$ref": "#/components/schemas/CampaignAudience"
+          },
+          "variants": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 5,
+            "items": {
+              "$ref": "#/components/schemas/CampaignVariant"
+            }
+          },
+          "ab": {
+            "$ref": "#/components/schemas/CampaignAb"
+          },
+          "schedule": {
+            "$ref": "#/components/schemas/CampaignSchedule"
+          },
+          "rate_per_minute": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 10,
+            "maximum": 100000
+          },
+          "goal": {
+            "$ref": "#/components/schemas/CampaignGoal"
+          }
+        }
+      },
+      "CampaignVariantStats": {
+        "type": "object",
+        "properties": {
+          "queued": {
+            "type": "integer"
+          },
+          "sent": {
+            "type": "integer"
+          },
+          "delivered": {
+            "type": "integer"
+          },
+          "opened": {
+            "type": "integer"
+          },
+          "clicked": {
+            "type": "integer"
+          },
+          "bounced": {
+            "type": "integer"
+          },
+          "failed": {
+            "type": "integer"
+          },
+          "skipped": {
+            "type": "integer"
+          },
+          "unsubscribed": {
+            "type": "integer"
+          },
+          "converted": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "description": "Recipients with the goal event in the window; null without a goal."
+          }
+        }
+      },
+      "CampaignRun": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "preparing",
+              "sending",
+              "testing",
+              "completed",
+              "paused",
+              "cancelled",
+              "failed"
+            ]
+          },
+          "scheduled_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "started_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "finished_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "audience_size": {
+            "type": "integer"
+          },
+          "queued": {
+            "type": "integer"
+          },
+          "winner": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "winner_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "error": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "variants": {
+            "type": "object",
+            "additionalProperties": {
+              "$ref": "#/components/schemas/CampaignVariantStats"
+            }
+          },
+          "total": {
+            "$ref": "#/components/schemas/CampaignVariantStats"
+          },
+          "metric": {
+            "type": "string",
+            "enum": [
+              "opened",
+              "clicked",
+              "goal"
+            ]
+          },
+          "stats": {
+            "$ref": "#/components/schemas/AbStats"
+          },
+          "ab_result": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "description": "Test result saved when the A/B winner was picked.",
+            "properties": {
+              "metric": {
+                "type": "string"
+              },
+              "decided_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "stats": {
+                "$ref": "#/components/schemas/AbStats"
+              }
+            }
+          }
+        }
+      },
+      "AbStats": {
+        "type": [
+          "object",
+          "null"
+        ],
+        "description": "Significance of the difference between variants (docs/architecture/analytics.md#значимость-ab); null with one variant.",
+        "properties": {
+          "verdict": {
+            "type": "string",
+            "enum": [
+              "winner",
+              "no_difference",
+              "insufficient_data"
+            ]
+          },
+          "winner": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Set only when the best variant is significantly better than every other one."
+          },
+          "best": {
+            "type": "string"
+          },
+          "required_per_arm": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "alpha": {
+            "type": "number"
+          },
+          "arms": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "key": {
+                  "type": "string"
+                },
+                "trials": {
+                  "type": "integer"
+                },
+                "successes": {
+                  "type": "integer"
+                },
+                "rate": {
+                  "type": "number"
+                },
+                "ci": {
+                  "type": "array",
+                  "items": {
+                    "type": "number"
+                  },
+                  "minItems": 2,
+                  "maxItems": 2,
+                  "description": "Wilson 95 % interval"
+                },
+                "lift": {
+                  "type": [
+                    "number",
+                    "null"
+                  ],
+                  "description": "Relative to the first variant"
+                },
+                "p_value": {
+                  "type": [
+                    "number",
+                    "null"
+                  ],
+                  "description": "Holm-adjusted p-value against the best variant"
+                },
+                "probability_best": {
+                  "type": "number"
+                }
+              }
+            }
+          }
+        }
+      },
+      "ProductCard": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "url": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "image": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "JPEG up to image_width via imgproxy; without imgproxy — a direct link (CDN copy or feed URL)."
+          },
+          "image_original": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Direct link: the platform CDN copy if the feed mirrors images, otherwise the feed URL."
+          },
+          "srcset": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "description": "Variants for <picture>: AVIF and WebP srcset (240–960 px); null without imgproxy.",
+            "properties": {
+              "avif": {
+                "type": "string"
+              },
+              "webp": {
+                "type": "string"
+              }
+            }
+          },
+          "price": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "old_price": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "currency": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "brand": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "category_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "ProductInput": {
+        "type": "object",
+        "required": [
+          "id",
+          "name"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "maxLength": 128,
+            "description": "Product id on the site: product_id in events."
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "url": {
+            "type": "string",
+            "format": "uri"
+          },
+          "image": {
+            "type": "string",
+            "format": "uri"
+          },
+          "price": {
+            "type": "number",
+            "minimum": 0
+          },
+          "old_price": {
+            "type": "number",
+            "minimum": 0
+          },
+          "currency": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 3
+          },
+          "available": {
+            "type": "boolean",
+            "default": true
+          },
+          "category_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 10,
+            "description": "Leaf category first."
+          },
+          "brand": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "params": {
+            "type": "object",
+            "additionalProperties": {
+              "type": [
+                "string",
+                "number",
+                "boolean"
+              ]
+            }
+          }
+        }
+      }
+    }
+  }
+}
