@@ -2,6 +2,10 @@
 
 All notable changes are documented here. The project follows [Semantic Versioning](https://semver.org/).
 
+## 1.1.0 — 2026-10-07
+
+- The `viber_id` identity type (`Identity::viberId()`): profiles, segment members, deep links and journey enrollment by the id of the user at the project's Viber bot.
+
 ## 1.0.0 — 2026-10-06
 
 First release: the whole public API v1 of OneTrace.pro.

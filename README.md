@@ -113,7 +113,7 @@ $link = $onetrace->profiles()->telegramLink(Identity::userId(42)); // ['url' => 
 $onetrace->profiles()->delete('user_id', '42'); // GDPR erasure
 ```
 
-Identity types: `user_id`, `anonymous_id`, `email`, `phone`, `telegram_chat_id`, `web_push`. Personal data in responses is masked unless the key has the `profiles.pii` permission.
+Identity types: `user_id`, `anonymous_id`, `email`, `phone`, `telegram_chat_id`, `viber_id`, `web_push`. Personal data in responses is masked unless the key has the `profiles.pii` permission.
 
 ## Products and recommendations
 

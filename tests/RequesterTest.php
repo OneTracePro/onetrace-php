@@ -205,6 +205,21 @@ final class RequesterTest extends TestCase
         self::assertSame('https://cdp.example.com/api/v1/profiles/user_id/42/events?before=2026-10-01T00%3A00%3A00%2B00%3A00', $transport->last()->getUrl());
     }
 
+    public function testAcceptsEveryIdentityTypeOfTheApi(): void
+    {
+        $transport = new FakeTransport();
+        $client = $this->client($transport);
+
+        $client->profiles()->get('viber_id', 'abc+DEF/123==');
+        self::assertSame('https://cdp.example.com/api/v1/profiles/viber_id/abc%2BDEF%2F123%3D%3D', $transport->last()->getUrl());
+
+        $client->segments()->addMembers(5, [Identity::viberId('abc'), Identity::telegramChatId(42)]);
+        self::assertSame([['type' => 'viber_id', 'value' => 'abc'], ['type' => 'telegram_chat_id', 'value' => '42']], $transport->lastJson()['identities']);
+
+        $spec = json_decode((string) file_get_contents(__DIR__ . '/Fixtures/openapi.json'), true);
+        self::assertEqualsCanonicalizing($spec['components']['parameters']['IdentityType']['schema']['enum'], Identity::TYPES);
+    }
+
     public function testRejectsUnknownIdentityTypes(): void
     {
         $this->expectException(\InvalidArgumentException::class);

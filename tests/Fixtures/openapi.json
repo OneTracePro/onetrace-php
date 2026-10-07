@@ -3489,6 +3489,7 @@
             "email",
             "phone",
             "telegram_chat_id",
+            "viber_id",
             "web_push"
           ]
         }
@@ -3673,6 +3674,7 @@
               "email",
               "phone",
               "telegram_chat_id",
+              "viber_id",
               "web_push"
             ]
           },

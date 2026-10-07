@@ -15,9 +15,10 @@ final class Identity
     public const EMAIL = 'email';
     public const PHONE = 'phone';
     public const TELEGRAM_CHAT_ID = 'telegram_chat_id';
+    public const VIBER_ID = 'viber_id';
     public const WEB_PUSH = 'web_push';
 
-    public const TYPES = [self::USER_ID, self::ANONYMOUS_ID, self::EMAIL, self::PHONE, self::TELEGRAM_CHAT_ID, self::WEB_PUSH];
+    public const TYPES = [self::USER_ID, self::ANONYMOUS_ID, self::EMAIL, self::PHONE, self::TELEGRAM_CHAT_ID, self::VIBER_ID, self::WEB_PUSH];
 
     private function __construct()
     {
@@ -85,6 +86,16 @@ final class Identity
     public static function telegramChatId($chatId): array
     {
         return self::of(self::TELEGRAM_CHAT_ID, $chatId);
+    }
+
+    /**
+     * The id of the user at the project's Viber bot (set when the user subscribes through viberLink()).
+     *
+     * @return array{type: string, value: string}
+     */
+    public static function viberId(string $viberId): array
+    {
+        return self::of(self::VIBER_ID, $viberId);
     }
 
     /**
