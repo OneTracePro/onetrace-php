@@ -18,6 +18,7 @@ use OneTrace\Resource\Push;
 use OneTrace\Resource\Recommendations;
 use OneTrace\Resource\Resource;
 use OneTrace\Resource\Segments;
+use OneTrace\Resource\Templates;
 use OneTrace\Resource\Widgets;
 use Psr\Http\Client\ClientInterface;
 use Psr\Http\Message\RequestFactoryInterface;
@@ -37,7 +38,7 @@ use Psr\Http\Message\StreamFactoryInterface;
  */
 final class Client
 {
-    public const VERSION = '1.1.0';
+    public const VERSION = '1.2.0';
 
     /**
      * API operations (operationId of the OpenAPI specification) and the methods that call them.
@@ -54,6 +55,7 @@ final class Client
         'recommendations.get' => 'recommendations.get',
         'widgets.get' => 'widgets.get',
         'meta.openapi' => 'openApi',
+        'key.show' => 'checkKey',
         'profiles.show' => 'profiles.get',
         'profiles.destroy' => 'profiles.delete',
         'profiles.events' => 'profiles.events',
@@ -96,6 +98,11 @@ final class Client
         'campaigns.pause' => 'campaigns.pause',
         'campaigns.resume' => 'campaigns.resume',
         'campaigns.cancel' => 'campaigns.cancel',
+        'templates.index' => 'templates.list',
+        'templates.store' => 'templates.create',
+        'templates.show' => 'templates.get',
+        'templates.update' => 'templates.update',
+        'templates.destroy' => 'templates.delete',
     ];
 
     private Requester $requester;
@@ -246,6 +253,26 @@ final class Client
     public function campaigns(): Campaigns
     {
         return $this->resource(Campaigns::class);
+    }
+
+    /**
+     * Message templates with language versions.
+     */
+    public function templates(): Templates
+    {
+        return $this->resource(Templates::class);
+    }
+
+    /**
+     * Checks a key: its type ("write" or "secret"), name, project and permissions. Use it for a "Test connection"
+     * button. $key is "secret" (the secret key) or "write" (the write key, or the secret one if there is no write key).
+     *
+     * @return array{type: string, name: string, project: array<string, mixed>, scopes: list<string>}
+     */
+    public function checkKey(string $key = 'secret'): array
+    {
+        /** @var array{type: string, name: string, project: array<string, mixed>, scopes: list<string>} */
+        return $this->requester->request('GET', '/key', ['auth' => $key === 'write' ? Requester::AUTH_WRITE : Requester::AUTH_SECRET]);
     }
 
     /**

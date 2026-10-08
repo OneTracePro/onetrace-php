@@ -40,6 +40,7 @@ final class OperationsTest extends TestCase
             'recommendations.get' => static function (Client $c) { return $c->recommendations()->get('viewed_with', ['item' => 'SKU-1']); },
             'widgets.get' => static function (Client $c) { return $c->widgets()->get('abc123def456', ['item' => 'SKU-1']); },
             'meta.openapi' => static function (Client $c) { return $c->openApi(); },
+            'key.show' => static function (Client $c) { return $c->checkKey('write'); },
             'profiles.show' => static function (Client $c) { return $c->profiles()->get('email', 'anna@example.com'); },
             'profiles.destroy' => static function (Client $c) { $c->profiles()->delete('user_id', '42'); },
             'profiles.events' => static function (Client $c) { return $c->profiles()->events('user_id', '42', ['name' => 'order_completed']); },
@@ -82,6 +83,11 @@ final class OperationsTest extends TestCase
             'campaigns.pause' => static function (Client $c) { return $c->campaigns()->pause(3); },
             'campaigns.resume' => static function (Client $c) { return $c->campaigns()->resume(3); },
             'campaigns.cancel' => static function (Client $c) { return $c->campaigns()->cancel(3); },
+            'templates.index' => static function (Client $c) { return $c->templates()->list(); },
+            'templates.store' => static function (Client $c) { return $c->templates()->create(['name' => 'Welcome', 'channel_key' => 'email', 'content' => []]); },
+            'templates.show' => static function (Client $c) { return $c->templates()->get(3); },
+            'templates.update' => static function (Client $c) { return $c->templates()->update(3, ['name' => 'Welcome 2']); },
+            'templates.destroy' => static function (Client $c) { $c->templates()->delete(3); },
         ];
     }
 

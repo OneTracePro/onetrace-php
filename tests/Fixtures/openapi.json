@@ -318,6 +318,81 @@
         }
       }
     },
+    "/key": {
+      "get": {
+        "operationId": "key.show",
+        "summary": "Check the API key",
+        "tags": [
+          "ingest"
+        ],
+        "description": "Key type, project and permissions. Accepts any active key (write or secret); use it for a \"Test connection\" button.",
+        "security": [
+          {
+            "writeKey": []
+          },
+          {
+            "secretKey": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "name",
+                    "project",
+                    "scopes"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "enum": [
+                        "write",
+                        "secret"
+                      ]
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "project": {
+                      "type": "object",
+                      "properties": {
+                        "uid": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "timezone": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "scopes": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Permissions of a secret key; empty for a write key."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
     "/push/config": {
       "get": {
         "operationId": "push.config",
@@ -2726,6 +2801,318 @@
         }
       }
     },
+    "/templates": {
+      "get": {
+        "operationId": "templates.index",
+        "summary": "List message templates",
+        "tags": [
+          "templates"
+        ],
+        "description": "Requires key permission(s): `templates.read`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Limit"
+          },
+          {
+            "$ref": "#/components/parameters/Cursor"
+          },
+          {
+            "name": "channel",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Only templates of this channel."
+          }
+        ],
+        "security": [
+          {
+            "secretKey": []
+          }
+        ],
+        "x-required-scopes": [
+          "templates.read"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "data",
+                    "next_cursor"
+                  ],
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/MessageTemplate"
+                      }
+                    },
+                    "next_cursor": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "description": "Pass as `cursor` to get the next page; null on the last page."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      },
+      "post": {
+        "operationId": "templates.store",
+        "summary": "Create a message template",
+        "tags": [
+          "templates"
+        ],
+        "description": "Every language version is checked against the channel schema and the Twig sandbox.\n\nRequires key permission(s): `templates.write`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MessageTemplateInput"
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "secretKey": []
+          }
+        ],
+        "x-required-scopes": [
+          "templates.write"
+        ],
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageTemplate"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationError"
+          }
+        }
+      }
+    },
+    "/templates/{template}": {
+      "get": {
+        "operationId": "templates.show",
+        "summary": "Get a message template",
+        "tags": [
+          "templates"
+        ],
+        "description": "Requires key permission(s): `templates.read`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/TemplateId"
+          }
+        ],
+        "security": [
+          {
+            "secretKey": []
+          }
+        ],
+        "x-required-scopes": [
+          "templates.read"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageTemplate"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      },
+      "patch": {
+        "operationId": "templates.update",
+        "summary": "Update a message template (partial)",
+        "tags": [
+          "templates"
+        ],
+        "description": "Journeys and campaigns that use the template send the new content from the next message on.\n\nRequires key permission(s): `templates.write`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/TemplateId"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "maxLength": 120
+                  },
+                  "topic": {
+                    "type": "string",
+                    "maxLength": 64,
+                    "pattern": "^[a-z0-9_-]+$",
+                    "default": "marketing"
+                  },
+                  "transactional": {
+                    "type": "boolean",
+                    "default": false
+                  },
+                  "language": {
+                    "type": "string",
+                    "maxLength": 16,
+                    "description": "Main language of `content`; the project default language if omitted.",
+                    "examples": [
+                      "de"
+                    ]
+                  },
+                  "content": {
+                    "type": "object",
+                    "additionalProperties": true,
+                    "description": "Fields of the channel message schema, e.g. `subject`, `html` and `text` for email; string fields are Twig templates."
+                  },
+                  "translations": {
+                    "type": "object",
+                    "maxProperties": 50,
+                    "additionalProperties": {
+                      "type": "object",
+                      "additionalProperties": true
+                    },
+                    "description": "Other language versions; each is validated like `content`. Omit to keep the stored versions, pass `{}` to delete them."
+                  }
+                },
+                "description": "Any subset of MessageTemplateInput fields except `channel_key`."
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "secretKey": []
+          }
+        ],
+        "x-required-scopes": [
+          "templates.write"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageTemplate"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationError"
+          }
+        }
+      },
+      "delete": {
+        "operationId": "templates.destroy",
+        "summary": "Delete a message template",
+        "tags": [
+          "templates"
+        ],
+        "description": "Messages already sent keep their content; journey steps and campaign variants that use the template stop being valid.\n\nRequires key permission(s): `templates.write`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/TemplateId"
+          }
+        ],
+        "security": [
+          {
+            "secretKey": []
+          }
+        ],
+        "x-required-scopes": [
+          "templates.write"
+        ],
+        "responses": {
+          "204": {
+            "description": "Deleted"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
     "/campaigns": {
       "get": {
         "operationId": "campaigns.index",
@@ -3552,6 +3939,14 @@
         "schema": {
           "type": "integer"
         }
+      },
+      "TemplateId": {
+        "name": "template",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "integer"
+        }
       }
     },
     "responses": {
@@ -3749,6 +4144,39 @@
           },
           "context": {
             "type": "object"
+          },
+          "consents": {
+            "type": "array",
+            "maxItems": 20,
+            "description": "identify only, secret key only: marketing consents given together with the customer data (sign-up or checkout form). Unknown channels are skipped.",
+            "items": {
+              "type": "object",
+              "required": [
+                "channel",
+                "status"
+              ],
+              "properties": {
+                "channel": {
+                  "type": "string",
+                  "pattern": "^[a-z0-9_]{1,64}$",
+                  "examples": [
+                    "email"
+                  ]
+                },
+                "topic": {
+                  "type": "string",
+                  "pattern": "^[a-z0-9_-]{1,64}$",
+                  "description": "Subscription topic; the whole channel if omitted."
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "subscribed",
+                    "unsubscribed"
+                  ]
+                }
+              }
+            }
           },
           "timestamp": {
             "type": "string",
@@ -4698,6 +5126,30 @@
                 "$ref": "#/components/schemas/AbStats"
               }
             }
+          },
+          "languages": {
+            "type": "object",
+            "description": "Results per language of the sent template version.",
+            "additionalProperties": {
+              "type": "object",
+              "properties": {
+                "sent": {
+                  "type": "integer"
+                },
+                "delivered": {
+                  "type": "integer"
+                },
+                "opened": {
+                  "type": "integer"
+                },
+                "clicked": {
+                  "type": "integer"
+                },
+                "unsubscribed": {
+                  "type": "integer"
+                }
+              }
+            }
           }
         }
       },
@@ -4921,6 +5373,119 @@
                 "boolean"
               ]
             }
+          }
+        }
+      },
+      "MessageTemplate": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          },
+          "channel": {
+            "type": "string",
+            "examples": [
+              "email"
+            ]
+          },
+          "topic": {
+            "type": "string",
+            "description": "Subscription topic the message belongs to."
+          },
+          "transactional": {
+            "type": "boolean"
+          },
+          "language": {
+            "type": "string",
+            "maxLength": 16,
+            "description": "Main language of `content`: recipients whose profile language has no version get it.",
+            "examples": [
+              "de"
+            ]
+          },
+          "content": {
+            "type": "object",
+            "additionalProperties": true,
+            "description": "Fields of the channel message schema, e.g. `subject`, `html` and `text` for email; string fields are Twig templates."
+          },
+          "translations": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object",
+              "additionalProperties": true
+            },
+            "description": "Other language versions: language tag → content. A recipient gets the version for the `language` profile trait (exact tag, then the base language, then another variant of it), otherwise `content`."
+          },
+          "version": {
+            "type": "integer",
+            "description": "Grows when any language version changes."
+          },
+          "created_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          }
+        }
+      },
+      "MessageTemplateInput": {
+        "type": "object",
+        "required": [
+          "name",
+          "channel_key",
+          "content"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 120
+          },
+          "channel_key": {
+            "type": "string",
+            "description": "Channel of the template; cannot be changed later."
+          },
+          "topic": {
+            "type": "string",
+            "maxLength": 64,
+            "pattern": "^[a-z0-9_-]+$",
+            "default": "marketing"
+          },
+          "transactional": {
+            "type": "boolean",
+            "default": false
+          },
+          "language": {
+            "type": "string",
+            "maxLength": 16,
+            "description": "Main language of `content`; the project default language if omitted.",
+            "examples": [
+              "de"
+            ]
+          },
+          "content": {
+            "type": "object",
+            "additionalProperties": true,
+            "description": "Fields of the channel message schema, e.g. `subject`, `html` and `text` for email; string fields are Twig templates."
+          },
+          "translations": {
+            "type": "object",
+            "maxProperties": 50,
+            "additionalProperties": {
+              "type": "object",
+              "additionalProperties": true
+            },
+            "description": "Other language versions; each is validated like `content`. Omit to keep the stored versions, pass `{}` to delete them."
           }
         }
       }

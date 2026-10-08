@@ -128,7 +128,7 @@ final class Events extends Resource
         $result = ['accepted' => 0, 'duplicates' => 0];
 
         foreach (self::chunks($messages) as $chunk) {
-            $response = $this->requester->request('POST', '/batch', ['auth' => Requester::AUTH_WRITE, 'json' => ['batch' => $chunk]]);
+            $response = $this->requester->request('POST', '/batch', ['auth' => self::auth($chunk), 'json' => ['batch' => $chunk]]);
             $result['accepted'] += self::count($response['accepted'] ?? 0);
             $result['duplicates'] += self::count($response['duplicates'] ?? 0);
         }
@@ -200,7 +200,23 @@ final class Events extends Resource
      */
     private function send(string $type, array $message): array
     {
-        return $this->requester->request('POST', '/' . $type, ['auth' => Requester::AUTH_WRITE, 'json' => self::prepare($type, $message)]);
+        return $this->requester->request('POST', '/' . $type, ['auth' => self::auth([$message]), 'json' => self::prepare($type, $message)]);
+    }
+
+    /**
+     * Consents in identify are accepted only with the secret key; other messages prefer the write key.
+     *
+     * @param array<array<string, mixed>> $messages
+     */
+    private static function auth(array $messages): string
+    {
+        foreach ($messages as $message) {
+            if (!empty($message['consents'])) {
+                return Requester::AUTH_SECRET;
+            }
+        }
+
+        return Requester::AUTH_WRITE;
     }
 
     /**

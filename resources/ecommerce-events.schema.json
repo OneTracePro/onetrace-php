@@ -1,0 +1,146 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://onetrace.pro/schemas/ecommerce-events/1.json",
+  "title": "OneTrace e-commerce plugin messages",
+  "description": "Messages that e-commerce plugins send to POST /api/v1/batch (docs/integrations/ecommerce.md). Version 1.",
+  "oneOf": [
+    { "$ref": "#/$defs/identify" },
+    { "$ref": "#/$defs/productEvent" },
+    { "$ref": "#/$defs/checkoutStarted" },
+    { "$ref": "#/$defs/orderEvent" }
+  ],
+  "$defs": {
+    "id": { "type": "string", "minLength": 1, "maxLength": 128 },
+    "money": { "type": "number", "minimum": 0 },
+    "currency": { "type": "string", "pattern": "^[A-Z]{3}$" },
+    "base": {
+      "type": "object",
+      "required": ["type"],
+      "properties": {
+        "messageId": { "type": "string", "minLength": 1, "maxLength": 100 },
+        "userId": { "$ref": "#/$defs/id" },
+        "anonymousId": { "type": "string", "minLength": 1, "maxLength": 255 },
+        "timestamp": { "type": "string", "format": "date-time" },
+        "context": { "type": "object" }
+      }
+    },
+    "line": {
+      "type": "object",
+      "required": ["product_id", "product_name", "price", "quantity"],
+      "additionalProperties": false,
+      "properties": {
+        "product_id": { "$ref": "#/$defs/id" },
+        "variant_id": { "$ref": "#/$defs/id" },
+        "product_name": { "type": "string", "minLength": 1 },
+        "price": { "$ref": "#/$defs/money" },
+        "quantity": { "type": "integer", "minimum": 1 },
+        "category_id": { "$ref": "#/$defs/id" }
+      }
+    },
+    "identify": {
+      "allOf": [{ "$ref": "#/$defs/base" }],
+      "type": "object",
+      "required": ["type", "traits"],
+      "anyOf": [{ "required": ["userId"] }, { "properties": { "traits": { "anyOf": [{ "required": ["email"] }, { "required": ["phone"] }] } } }],
+      "properties": {
+        "type": { "const": "identify" },
+        "traits": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "email": { "type": "string", "format": "email" },
+            "phone": { "type": "string", "pattern": "^\\+[1-9][0-9]{6,14}$" },
+            "first_name": { "type": "string" },
+            "last_name": { "type": "string" },
+            "city": { "type": "string" },
+            "country": { "type": "string", "pattern": "^[A-Z]{2}$" },
+            "language": { "type": "string", "pattern": "^[a-z]{2,3}(-[A-Z][a-z]{3})?(-([A-Z]{2}|[0-9]{3}))?$" },
+            "customer_group": { "type": "string" }
+          }
+        },
+        "consents": {
+          "type": "array",
+          "maxItems": 20,
+          "items": {
+            "type": "object",
+            "required": ["channel", "status"],
+            "additionalProperties": false,
+            "properties": {
+              "channel": { "type": "string", "pattern": "^[a-z0-9_]{1,64}$" },
+              "topic": { "type": "string", "pattern": "^[a-z0-9_-]{1,64}$" },
+              "status": { "enum": ["subscribed", "unsubscribed"] }
+            }
+          }
+        }
+      }
+    },
+    "productEvent": {
+      "allOf": [{ "$ref": "#/$defs/base" }],
+      "type": "object",
+      "required": ["type", "event", "properties"],
+      "properties": {
+        "type": { "const": "track" },
+        "event": { "enum": ["product_viewed", "add_to_cart", "remove_from_cart"] },
+        "properties": {
+          "type": "object",
+          "required": ["product_id", "product_name", "price", "currency"],
+          "properties": {
+            "product_id": { "$ref": "#/$defs/id" },
+            "variant_id": { "$ref": "#/$defs/id" },
+            "product_name": { "type": "string", "minLength": 1 },
+            "price": { "$ref": "#/$defs/money" },
+            "quantity": { "type": "integer", "minimum": 1 },
+            "currency": { "$ref": "#/$defs/currency" },
+            "category_id": { "$ref": "#/$defs/id" },
+            "cart_url": { "type": "string", "format": "uri" }
+          }
+        }
+      }
+    },
+    "checkoutStarted": {
+      "allOf": [{ "$ref": "#/$defs/base" }],
+      "type": "object",
+      "required": ["type", "event", "properties"],
+      "properties": {
+        "type": { "const": "track" },
+        "event": { "const": "checkout_started" },
+        "properties": {
+          "type": "object",
+          "required": ["amount", "currency", "products"],
+          "properties": {
+            "amount": { "$ref": "#/$defs/money" },
+            "currency": { "$ref": "#/$defs/currency" },
+            "products": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/line" } },
+            "cart_url": { "type": "string", "format": "uri" }
+          }
+        }
+      }
+    },
+    "orderEvent": {
+      "allOf": [{ "$ref": "#/$defs/base" }],
+      "type": "object",
+      "required": ["type", "messageId", "event", "properties", "timestamp"],
+      "properties": {
+        "type": { "const": "track" },
+        "event": { "enum": ["order_completed", "order_paid", "order_cancelled", "order_refunded"] },
+        "properties": {
+          "type": "object",
+          "required": ["order_id", "amount", "currency"],
+          "properties": {
+            "order_id": { "$ref": "#/$defs/id" },
+            "amount": { "$ref": "#/$defs/money" },
+            "currency": { "$ref": "#/$defs/currency" },
+            "subtotal": { "$ref": "#/$defs/money" },
+            "shipping": { "$ref": "#/$defs/money" },
+            "tax": { "$ref": "#/$defs/money" },
+            "discount": { "$ref": "#/$defs/money" },
+            "coupon": { "type": "string" },
+            "payment_method": { "type": "string" },
+            "shipping_method": { "type": "string" },
+            "products": { "type": "array", "items": { "$ref": "#/$defs/line" } }
+          }
+        }
+      }
+    }
+  }
+}

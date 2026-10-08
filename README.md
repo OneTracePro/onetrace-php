@@ -149,6 +149,48 @@ $report = $onetrace->campaigns()->report(3);
 
 Segment rules, journey graphs and campaign settings use the same JSON as the [API reference](https://onetrace.pro/en/docs/api).
 
+## Message templates
+
+Templates have language versions: `content` in the main `language`, other languages in `translations`. Each recipient gets the version for the `language` trait of their profile, otherwise the main one.
+
+```php
+$template = $onetrace->templates()->create([
+    'name' => 'Welcome',
+    'channel_key' => 'email',
+    'language' => 'en',
+    'content' => ['subject' => 'Hello {{ traits.first_name }}', 'html' => '<p>Welcome!</p>'],
+    'translations' => ['de' => ['subject' => 'Hallo {{ traits.first_name }}', 'html' => '<p>Willkommen!</p>']],
+]);
+$onetrace->templates()->update($template['id'], ['name' => 'Welcome email']); // versions are kept
+```
+
+## E-commerce plugins
+
+`OneTrace\Commerce` builds the messages of the common e-commerce contract that the OneTrace.pro shop plugins send (WooCommerce, Magento, PrestaShop, Shopware, OpenCart, 1C-Bitrix, CS-Cart). Use it for your own shop backend too: journeys, recommendations and predictions then work the same way.
+
+```php
+use OneTrace\Commerce\{CatalogItem, Customer, LineItem, Messages, Order, Retry};
+
+$messages = new Messages('myshop', 'https://shop.example.com');
+$customer = (new Customer((string) $user->id, $_COOKIE['cdp_aid'] ?? null))
+    ->email($user->email)->phone($user->phone)->name($user->first_name, $user->last_name)->country('DE')->language('de');
+$order = (new Order('A-1001', 109.90, 'EUR', $placedAt, $customer, [new LineItem('SKU-1', 'Sneakers', 49.95, 2)]))
+    ->with(['shipping' => 10, 'coupon' => 'AUTUMN']);
+
+$onetrace->events()->batch(array_filter([
+    $messages->identify($customer, [Messages::subscribed('email')]), // consents need the secret key
+    $messages->orderCompleted($order),                               // the same order gives the same messageId
+]));
+
+$onetrace->products()->upsert([CatalogItem::make('SKU-1', 'Sneakers', $url, $image, 49.95, 'EUR', true, ['shoes'])]);
+```
+
+- `Customer` keeps only valid values: the phone in E.164, the country as ISO 3166-1, the language as a BCP 47 tag.
+- `orderPaid()`, `orderCancelled()` and `orderRefunded()` follow order status changes; `product()` and `checkoutStarted()` send cart events from the backend.
+- `Retry::decide($exception)` tells a queue what to do with a failed batch: `retry` (after `Retry::delay($attempt)`), `drop` (invalid data) or `settings` (the key is wrong).
+- The contract as JSON Schema: `resources/ecommerce-events.schema.json` — validate your messages against it in tests.
+- `$onetrace->checkKey()` / `checkKey('write')` — type, project and permissions of a key, for a "Test connection" button.
+
 ## Pagination
 
 Lists return a `OneTrace\Page` (iterable, countable, `getNextCursor()`); `iterate…()` methods walk all pages lazily:
