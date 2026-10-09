@@ -65,6 +65,14 @@ final class Customer
     /** Language of the customer's storefront: "de", "pt_BR" and "pt-br" become BCP 47 ("pt-BR"). */
     public function language(?string $language): self
     {
+        return $this->with('language', self::languageTag($language));
+    }
+
+    /**
+     * BCP 47 tag of a platform locale ("pt_BR" → "pt-BR"), null if it does not look like a language.
+     */
+    public static function languageTag(?string $language): ?string
+    {
         $parts = preg_split('/[-_]/', (string) self::text($language)) ?: [];
         $tag = null;
 
@@ -80,7 +88,7 @@ final class Customer
             }
         }
 
-        return $this->with('language', $tag);
+        return $tag;
     }
 
     public function group(?string $group): self

@@ -158,6 +158,16 @@ final class CommerceTest extends TestCase
         self::assertSame(['id' => '6', 'name' => 'Boots', 'parent_id' => '5'], CatalogItem::category(6, 'Boots', 5));
     }
 
+    public function testTranslatesProductsAndCategoriesForOtherLanguagesOfTheStore(): void
+    {
+        $item = CatalogItem::translate(CatalogItem::make(17, 'Кроссовки', 'https://shop.example.com/p/17', null, 49.95, 'EUR', true), 'en_US', ' Sneakers ', 'https://shop.example.com/en/p/17', ['color' => 'black', 'size' => null]);
+        $item = CatalogItem::translate($item, 'de', '', 'not a url');
+        $category = CatalogItem::translateCategory(CatalogItem::category(5, 'Обувь'), 'en', 'Shoes');
+
+        self::assertSame(['en-US' => ['name' => 'Sneakers', 'url' => 'https://shop.example.com/en/p/17', 'params' => ['color' => 'black']]], $item['translations']);
+        self::assertSame(['en' => ['name' => 'Shoes']], $category['translations']);
+    }
+
     public function testDecidesWhatToDoWithFailedBatches(): void
     {
         self::assertSame(Retry::RETRY, Retry::decide(new TransportException('timeout')));

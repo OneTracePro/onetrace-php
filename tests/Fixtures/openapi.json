@@ -692,6 +692,15 @@
               "maximum": 1200,
               "default": 480
             }
+          },
+          {
+            "name": "language",
+            "in": "query",
+            "description": "Visitor language (BCP 47, as in context.locale): product names and links come in the catalog translation for the closest language (ADR-080).",
+            "schema": {
+              "type": "string",
+              "maxLength": 35
+            }
           }
         ],
         "responses": {
@@ -1223,6 +1232,20 @@
                             "string",
                             "null"
                           ]
+                        },
+                        "translations": {
+                          "type": "object",
+                          "maxProperties": 20,
+                          "description": "Category name by language (BCP 47 tag → {name}).",
+                          "additionalProperties": {
+                            "type": "object",
+                            "properties": {
+                              "name": {
+                                "type": "string",
+                                "maxLength": 300
+                              }
+                            }
+                          }
                         }
                       }
                     }
@@ -3763,7 +3786,7 @@
           {
             "name": "language",
             "in": "query",
-            "description": "Visitor language (BCP 47, as in context.locale): the heading and the button come in their translation for the closest project language, otherwise in the default language (ADR-078).",
+            "description": "Visitor language (BCP 47, as in context.locale): the heading, the button and product names come in their translation for the closest language (ADR-078, ADR-080).",
             "schema": {
               "type": "string",
               "maxLength": 35
@@ -3979,6 +4002,15 @@
               "maximum": 1200,
               "default": 480
             }
+          },
+          {
+            "name": "language",
+            "in": "query",
+            "description": "Visitor language (BCP 47, as in context.locale): product names and links come in the catalog translation for the closest language (ADR-080).",
+            "schema": {
+              "type": "string",
+              "maxLength": 35
+            }
           }
         ],
         "responses": {
@@ -4147,6 +4179,15 @@
               "minimum": 64,
               "maximum": 1200,
               "default": 480
+            }
+          },
+          {
+            "name": "language",
+            "in": "query",
+            "description": "Visitor language (BCP 47, as in context.locale): product names and links come in the catalog translation for the closest language (ADR-080).",
+            "schema": {
+              "type": "string",
+              "maxLength": 35
             }
           }
         ],
@@ -5739,6 +5780,28 @@
                 "number",
                 "boolean"
               ]
+            }
+          },
+          "translations": {
+            "type": "object",
+            "maxProperties": 20,
+            "description": "Translations by language (BCP 47 tag → text), ADR-080: name, url and params in that language; they are shown to visitors and in messages of the language. Languages sent before are kept, a new one is added.",
+            "additionalProperties": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "maxLength": 500
+                },
+                "url": {
+                  "type": "string",
+                  "format": "uri",
+                  "maxLength": 2000
+                },
+                "params": {
+                  "type": "object"
+                }
+              }
             }
           }
         }

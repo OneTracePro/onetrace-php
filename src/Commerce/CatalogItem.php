@@ -58,7 +58,7 @@ final class CatalogItem
      * @param string|int $id
      * @param string|int|null $parentId
      *
-     * @return array{id: string, name: string, parent_id?: string}
+     * @return array<string, mixed>
      */
     public static function category($id, string $name, $parentId = null): array
     {
@@ -66,6 +66,58 @@ final class CatalogItem
 
         if ($parentId !== null && (string) $parentId !== '' && (string) $parentId !== '0') {
             $category['parent_id'] = (string) $parentId;
+        }
+
+        return $category;
+    }
+
+    /**
+     * A translation of the product for another language of the store (catalog languages of the platform): the
+     * visitor and the emails of that language see this name and link. Empty values are skipped.
+     *
+     * @param array<string, mixed> $item CatalogItem::make()
+     * @param array<string, mixed> $params translated attribute values
+     *
+     * @return array<string, mixed>
+     */
+    public static function translate(array $item, string $language, ?string $name, ?string $url = null, array $params = []): array
+    {
+        $tag = Customer::languageTag($language);
+        $params = array_slice(array_filter($params, static function ($value): bool {
+            return $value !== null && $value !== '' && is_scalar($value);
+        }), 0, self::MAX_PARAMS, true);
+        $text = array_filter([
+            'name' => $name !== null && trim($name) !== '' ? trim($name) : null,
+            'url' => self::url($url),
+            'params' => $params !== [] ? $params : null,
+        ], static function ($value): bool {
+            return $value !== null;
+        });
+
+        if ($tag !== null && $text !== []) {
+            $translations = isset($item['translations']) && \is_array($item['translations']) ? $item['translations'] : [];
+            $translations[$tag] = $text;
+            $item['translations'] = $translations;
+        }
+
+        return $item;
+    }
+
+    /**
+     * A translation of the category name.
+     *
+     * @param array<string, mixed> $category CatalogItem::category()
+     *
+     * @return array<string, mixed>
+     */
+    public static function translateCategory(array $category, string $language, string $name): array
+    {
+        $tag = Customer::languageTag($language);
+
+        if ($tag !== null && trim($name) !== '') {
+            $translations = isset($category['translations']) && \is_array($category['translations']) ? $category['translations'] : [];
+            $translations[$tag] = ['name' => trim($name)];
+            $category['translations'] = $translations;
         }
 
         return $category;

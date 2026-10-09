@@ -2,6 +2,11 @@
 
 All notable changes are documented here. The project follows [Semantic Versioning](https://semver.org/).
 
+## 1.4.0 — 2026-10-09
+
+- Catalog languages: `CatalogItem::translate()` and `CatalogItem::translateCategory()` add translations of the name, link and attributes for other languages of the store; recommendations, widgets and search take `language` (the visitor's language) and return products in that translation.
+- `Customer::languageTag()`: a platform locale as a BCP 47 tag.
+
 ## 1.3.0 — 2026-10-09
 
 - `search()`: product search for websites — `products()` (results with facets, the order by the visitor's interests) and `suggest()` (products, categories and popular queries while typing).

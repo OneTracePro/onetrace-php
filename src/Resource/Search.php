@@ -15,9 +15,10 @@ final class Search extends Resource
     /**
      * products('linen dress', ['per_page' => 24, 'anonymousId' => $visitor]): items, total, page, per_page, relaxed,
      * personalized and facets (categories, brands, price). anonymousId — the tracker visitor id, for the order by
-     * the visitor's interests.
+     * the visitor's interests; language — the visitor's language ("ru", "de-AT"): names and links of the catalog
+     * translations.
      *
-     * @param array{category?: string, brand?: string|list<string>, price_min?: float, price_max?: float, sort?: string, page?: int, per_page?: int, all?: bool, anonymousId?: string, image_width?: int} $params
+     * @param array{category?: string, brand?: string|list<string>, price_min?: float, price_max?: float, sort?: string, page?: int, per_page?: int, all?: bool, anonymousId?: string, image_width?: int, language?: string} $params
      *
      * @return array<string, mixed>
      */
@@ -43,7 +44,7 @@ final class Search extends Resource
     /**
      * suggest('lin'): products by the beginning of words, categories by name and popular queries of the website.
      *
-     * @param array{limit?: int, image_width?: int} $params
+     * @param array{limit?: int, image_width?: int, language?: string} $params
      *
      * @return array{products: list<array<string, mixed>>, categories: list<array{id: string, name: string}>, queries: list<string>}
      */
