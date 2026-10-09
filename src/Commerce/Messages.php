@@ -181,6 +181,29 @@ final class Messages
     }
 
     /**
+     * A results page of the product search was shown (sent by whoever renders the results: the shop server or
+     * cdp.search() of the tracker, once per query). Popular queries of the search suggestions come from these events.
+     *
+     * @return array<string, mixed>|null null for an empty query
+     */
+    public function search(Customer $customer, string $query, int $results, ?string $requestId = null): ?array
+    {
+        $query = trim((string) preg_replace('/\s+/u', ' ', $query));
+
+        if ($query === '') {
+            return null;
+        }
+
+        $properties = ['query' => function_exists('mb_substr') ? mb_substr($query, 0, 200) : substr($query, 0, 200), 'results' => max(0, $results)];
+
+        if ($requestId !== null && $requestId !== '') {
+            $properties['request_id'] = $requestId;
+        }
+
+        return ['type' => 'track', 'event' => 'search'] + $customer->ids() + ['properties' => $properties];
+    }
+
+    /**
      * Deterministic id of an order event, at most 100 characters.
      */
     public function orderMessageId(string $orderId, string $event, ?string $suffix = null): string

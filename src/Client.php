@@ -16,6 +16,7 @@ use OneTrace\Resource\Products;
 use OneTrace\Resource\Profiles;
 use OneTrace\Resource\Push;
 use OneTrace\Resource\Recommendations;
+use OneTrace\Resource\Search;
 use OneTrace\Resource\Resource;
 use OneTrace\Resource\Segments;
 use OneTrace\Resource\Templates;
@@ -38,7 +39,7 @@ use Psr\Http\Message\StreamFactoryInterface;
  */
 final class Client
 {
-    public const VERSION = '1.2.0';
+    public const VERSION = '1.3.0';
 
     /**
      * API operations (operationId of the OpenAPI specification) and the methods that call them.
@@ -54,6 +55,8 @@ final class Client
         'push.unsubscribe' => 'push.unsubscribe',
         'recommendations.get' => 'recommendations.get',
         'widgets.get' => 'widgets.get',
+        'search.products' => 'search.products',
+        'search.suggest' => 'search.suggest',
         'meta.openapi' => 'openApi',
         'key.show' => 'checkKey',
         'profiles.show' => 'profiles.get',
@@ -127,7 +130,7 @@ final class Client
      *     language?: string,
      *     sleep?: callable(float): void,
      * } $options
-     *   - write_key: cdp_wk_… for events, recommendations, widgets and Web Push;
+     *   - write_key: cdp_wk_… for events, recommendations, widgets, product search and Web Push;
      *   - secret_key: cdp_sk_… for everything (never expose it to browsers);
      *   - timeout / connect_timeout: seconds for the built-in cURL transport (10 and 5 by default);
      *   - max_retries: retries of network errors, 429, 5xx (3 by default, 0 disables);
@@ -221,6 +224,14 @@ final class Client
     public function widgets(): Widgets
     {
         return $this->resource(Widgets::class);
+    }
+
+    /**
+     * Product search for websites.
+     */
+    public function search(): Search
+    {
+        return $this->resource(Search::class);
     }
 
     /**

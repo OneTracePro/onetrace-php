@@ -3759,6 +3759,15 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "language",
+            "in": "query",
+            "description": "Visitor language (BCP 47, as in context.locale): the heading and the button come in their translation for the closest project language, otherwise in the default language (ADR-078).",
+            "schema": {
+              "type": "string",
+              "maxLength": 35
+            }
           }
         ],
         "responses": {
@@ -3845,6 +3854,364 @@
           },
           "404": {
             "description": "Widget not found in the project"
+          }
+        }
+      }
+    },
+    "/search": {
+      "get": {
+        "operationId": "search.products",
+        "summary": "Product search for the site",
+        "tags": [
+          "search"
+        ],
+        "description": "Write key (tracker, shop plugins), ADR-079. Word forms of the project languages, typos and a query typed in the wrong keyboard layout are understood; a query without results is retried with any of its words (`relaxed`). With `anonymousId` the first results are reordered by the categories and brands the visitor looked at (`personalized`). Facets are counted over the whole query, before the category, brand and price filters.",
+        "security": [
+          {
+            "writeKey": []
+          },
+          {
+            "secretKey": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "description": "Query text; empty — the whole catalog.",
+            "schema": {
+              "type": "string",
+              "maxLength": 200
+            }
+          },
+          {
+            "name": "category",
+            "in": "query",
+            "description": "Category id; products of its subcategories too.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "brand[]",
+            "in": "query",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "maxItems": 20
+            }
+          },
+          {
+            "name": "price_min",
+            "in": "query",
+            "schema": {
+              "type": "number",
+              "minimum": 0
+            }
+          },
+          {
+            "name": "price_max",
+            "in": "query",
+            "schema": {
+              "type": "number",
+              "minimum": 0
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "relevance",
+                "popular",
+                "price_asc",
+                "price_desc"
+              ],
+              "default": "relevance"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 1
+            }
+          },
+          {
+            "name": "per_page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 48,
+              "default": 24
+            }
+          },
+          {
+            "name": "all",
+            "in": "query",
+            "description": "Include products that are not available.",
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
+          },
+          {
+            "name": "anonymousId",
+            "in": "query",
+            "description": "Tracker visitor id for the personal order.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "image_width",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 64,
+              "maximum": 1200,
+              "default": 480
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Found products",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "request_id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "query": {
+                      "type": "string"
+                    },
+                    "total": {
+                      "type": "integer"
+                    },
+                    "page": {
+                      "type": "integer"
+                    },
+                    "per_page": {
+                      "type": "integer"
+                    },
+                    "relaxed": {
+                      "type": "boolean",
+                      "description": "Nothing matched all words: products matching any word."
+                    },
+                    "personalized": {
+                      "type": "boolean"
+                    },
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "allOf": [
+                          {
+                            "$ref": "#/components/schemas/ProductCard"
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "available": {
+                                "type": "boolean"
+                              }
+                            }
+                          }
+                        ]
+                      }
+                    },
+                    "facets": {
+                      "type": "object",
+                      "properties": {
+                        "categories": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string"
+                              },
+                              "count": {
+                                "type": "integer"
+                              }
+                            }
+                          }
+                        },
+                        "brands": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "name": {
+                                "type": "string"
+                              },
+                              "count": {
+                                "type": "integer"
+                              }
+                            }
+                          }
+                        },
+                        "price": {
+                          "type": "object",
+                          "properties": {
+                            "min": {
+                              "type": [
+                                "number",
+                                "null"
+                              ]
+                            },
+                            "max": {
+                              "type": [
+                                "number",
+                                "null"
+                              ]
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "402": {
+            "description": "Product search is not in the plan of the project (code feature_unavailable)"
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/search/suggest": {
+      "get": {
+        "operationId": "search.suggest",
+        "summary": "Search suggestions while typing",
+        "tags": [
+          "search"
+        ],
+        "description": "Write key, ADR-079. Products by the beginning of words, categories by name, popular queries of the website (`search` events of the last 30 days). An empty query returns only the popular queries.",
+        "security": [
+          {
+            "writeKey": []
+          },
+          {
+            "secretKey": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "maxLength": 100
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Products in the suggestion.",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 10,
+              "default": 6
+            }
+          },
+          {
+            "name": "image_width",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 64,
+              "maximum": 1200,
+              "default": 480
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Suggestions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "products": {
+                      "type": "array",
+                      "items": {
+                        "allOf": [
+                          {
+                            "$ref": "#/components/schemas/ProductCard"
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "available": {
+                                "type": "boolean"
+                              }
+                            }
+                          }
+                        ]
+                      }
+                    },
+                    "categories": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    },
+                    "queries": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "402": {
+            "description": "Product search is not in the plan of the project (code feature_unavailable)"
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
           }
         }
       }

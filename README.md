@@ -131,6 +131,19 @@ $recommendations = $onetrace->recommendations()->get('viewed_with', ['item' => '
 
 Product ids are the same ids the website sends in events (`product_id`). Up to 1000 products per call.
 
+## Product search
+
+```php
+$result = $onetrace->search()->products('linen dress', [
+    'per_page' => 24, 'sort' => 'relevance', 'brand' => ['Contoso'], 'anonymousId' => $visitorId,
+]);
+// $result['items'], $result['total'], $result['facets'] (categories, brands, price), $result['relaxed'], $result['personalized']
+
+$hints = $onetrace->search()->suggest('lin'); // products, categories, popular queries
+```
+
+Word forms, typos and a query typed in the wrong keyboard layout are understood; with `anonymousId` (the tracker visitor id) the first results follow the visitor's interests. The plan of the project must include product search. A shop that renders the results page itself sends the `search` event once per query: `(new Messages('myshop', $url))->search($customer, $query, $result['total'])`.
+
 ## Segments, journeys and campaigns
 
 ```php

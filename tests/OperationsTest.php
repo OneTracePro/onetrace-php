@@ -39,6 +39,8 @@ final class OperationsTest extends TestCase
             'push.unsubscribe' => static function (Client $c) { return $c->push()->unsubscribe('https://fcm.googleapis.com/fcm/send/x'); },
             'recommendations.get' => static function (Client $c) { return $c->recommendations()->get('viewed_with', ['item' => 'SKU-1']); },
             'widgets.get' => static function (Client $c) { return $c->widgets()->get('abc123def456', ['item' => 'SKU-1']); },
+            'search.products' => static function (Client $c) { return $c->search()->products('linen dress', ['brand' => 'Contoso', 'all' => true]); },
+            'search.suggest' => static function (Client $c) { return $c->search()->suggest('lin'); },
             'meta.openapi' => static function (Client $c) { return $c->openApi(); },
             'key.show' => static function (Client $c) { return $c->checkKey('write'); },
             'profiles.show' => static function (Client $c) { return $c->profiles()->get('email', 'anna@example.com'); },

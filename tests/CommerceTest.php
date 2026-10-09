@@ -136,6 +136,16 @@ final class CommerceTest extends TestCase
         $messages->product('order_completed', $customer, $line, 'EUR');
     }
 
+    public function testBuildsSearchEventsOfResultsPages(): void
+    {
+        $messages = new Messages('woocommerce', 'https://shop.example.com');
+        $search = $messages->search(new Customer(null, 'anon-1'), "  linen\n dress ", 12, 'req-1');
+
+        self::assertSame(['query' => 'linen dress', 'results' => 12, 'request_id' => 'req-1'], $search['properties']);
+        self::assertMatchesContract($search);
+        self::assertNull($messages->search(new Customer(null, 'anon-1'), '   ', 0));
+    }
+
     public function testBuildsCatalogItems(): void
     {
         $item = CatalogItem::make(17, 'Sneakers', 'https://shop.example.com/p/17', 'not a url', 39.9, 'eur', true, [5, 1], 49.9, ' Nike ', ['Color' => 'white', 'Empty' => '', 'List' => null] + array_fill_keys(range(1, 30), 'x'));

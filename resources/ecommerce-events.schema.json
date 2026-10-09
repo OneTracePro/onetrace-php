@@ -7,7 +7,9 @@
     { "$ref": "#/$defs/identify" },
     { "$ref": "#/$defs/productEvent" },
     { "$ref": "#/$defs/checkoutStarted" },
-    { "$ref": "#/$defs/orderEvent" }
+    { "$ref": "#/$defs/orderEvent" },
+    { "$ref": "#/$defs/searchEvent" },
+    { "$ref": "#/$defs/searchClick" }
   ],
   "$defs": {
     "id": { "type": "string", "minLength": 1, "maxLength": 128 },
@@ -138,6 +140,44 @@
             "payment_method": { "type": "string" },
             "shipping_method": { "type": "string" },
             "products": { "type": "array", "items": { "$ref": "#/$defs/line" } }
+          }
+        }
+      }
+    },
+    "searchEvent": {
+      "allOf": [{ "$ref": "#/$defs/base" }],
+      "type": "object",
+      "required": ["type", "event", "properties"],
+      "properties": {
+        "type": { "const": "track" },
+        "event": { "const": "search" },
+        "properties": {
+          "type": "object",
+          "required": ["query"],
+          "properties": {
+            "query": { "type": "string", "minLength": 1, "maxLength": 200 },
+            "results": { "type": "integer", "minimum": 0 },
+            "request_id": { "type": "string" }
+          }
+        }
+      }
+    },
+    "searchClick": {
+      "allOf": [{ "$ref": "#/$defs/base" }],
+      "type": "object",
+      "required": ["type", "event", "properties"],
+      "properties": {
+        "type": { "const": "track" },
+        "event": { "const": "search_result_clicked" },
+        "properties": {
+          "type": "object",
+          "required": ["query", "product_id"],
+          "properties": {
+            "query": { "type": "string", "minLength": 1, "maxLength": 200 },
+            "product_id": { "$ref": "#/$defs/id" },
+            "position": { "type": "integer", "minimum": 0 },
+            "source": { "enum": ["results", "suggest"] },
+            "request_id": { "type": "string" }
           }
         }
       }

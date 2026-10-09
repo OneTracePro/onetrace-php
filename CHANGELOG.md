@@ -2,6 +2,11 @@
 
 All notable changes are documented here. The project follows [Semantic Versioning](https://semver.org/).
 
+## 1.3.0 — 2026-10-09
+
+- `search()`: product search for websites — `products()` (results with facets, the order by the visitor's interests) and `suggest()` (products, categories and popular queries while typing).
+- `Commerce\Messages::search()`: the `search` event of a results page; the contract schema has the `search` and `search_result_clicked` events.
+
 ## 1.2.0 — 2026-10-08
 
 - `OneTrace\Commerce`: messages of the common e-commerce contract for shop plugins and backends — `Customer`, `LineItem`, `Order`, `Messages` (identify with consents, order_completed / paid / cancelled / refunded with deterministic messageIds, product and checkout events), `CatalogItem` for the product feed and `Retry` for queues; the contract as JSON Schema in `resources/ecommerce-events.schema.json`.
