@@ -175,6 +175,30 @@ $report = $onetrace->campaigns()->report(3);
 
 Segment rules, journey graphs and campaign settings use the same JSON as the [API reference](https://onetrace.pro/en/docs/api).
 
+## Analytics
+
+Reports of every kind with the same definitions as the analytics pages; the response holds the normalized `definition` and the result. Needs a secret key with `analytics.read` (30 report calculations per minute per key); saved reports and dashboards need `analytics.write`.
+
+```php
+$funnel = $onetrace->analytics()->funnel([
+    'steps' => [['event' => 'product_viewed'], ['event' => 'add_to_cart'], ['event' => 'order_completed']],
+    'window' => ['amount' => 7, 'unit' => 'day'],
+    'period' => ['last' => 30],
+]);
+$funnel['steps'][2]['from_start']; // conversion from the first step
+
+$revenue = $onetrace->analytics()->revenue(['interval' => 'week', 'period' => ['last' => 90]]);
+$sources = $onetrace->analytics()->traffic(['dimension' => 'source_medium']);
+$credit = $onetrace->analytics()->attribution(['window_days' => 7, 'model' => 'linear']);
+
+// Saved reports and dashboards
+$report = $onetrace->analytics()->createSavedReport(['name' => 'Purchase funnel', 'type' => 'funnel', 'definition' => $funnel['definition']]);
+$lastWeek = $onetrace->analytics()->runSavedReport($report['id'], ['last' => 7]);
+$onetrace->analytics()->createDashboard(['name' => 'Weekly', 'layout' => [['report_id' => $report['id'], 'size' => 'full']]]);
+```
+
+Also: `report()` (event report builder), `retention()`, `paths()`, `savedReports()` / `iterateSavedReports()`, `savedReport()`, `updateSavedReport()`, `deleteSavedReport()`, `dashboards()` / `iterateDashboards()`, `dashboard()`, `updateDashboard()`, `deleteDashboard()`.
+
 ## Message templates
 
 Templates have language versions: `content` in the main `language`, other languages in `translations`. Each recipient gets the version for the `language` trait of their profile, otherwise the main one.

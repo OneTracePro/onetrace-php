@@ -4114,6 +4114,14 @@
                           }
                         }
                       }
+                    },
+                    "redirect": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "format": "uri",
+                      "description": "Redirect rule of the query (Site → Search): the page to open instead of the results, or null."
                     }
                   }
                 }
@@ -4236,6 +4244,14 @@
                       "items": {
                         "type": "string"
                       }
+                    },
+                    "redirect": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "format": "uri",
+                      "description": "Redirect rule of the query (Site → Search): the page to open instead of the results, or null."
                     }
                   }
                 }
@@ -4253,6 +4269,973 @@
           },
           "429": {
             "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/analytics/reports": {
+      "post": {
+        "operationId": "analytics.reports",
+        "summary": "Run an event report",
+        "tags": [
+          "analytics"
+        ],
+        "description": "Report builder: series of an event and a metric (count, unique profiles, per profile, sum or average of a numeric property) with property filters, profile filter, breakdown, interval, period and comparison with the previous period (docs/architecture/analytics.md#конструктор-отчётов). Runs the report in ClickHouse (up to 30 s; results cached for 5 minutes). Rate limit: 30 report calculations per minute per key, separate from the general API limit. The response holds the normalized `definition` and the result — the same as the analytics pages.\n\nRequires key permission(s): `analytics.read`.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReportQuery"
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "secretKey": []
+          }
+        ],
+        "x-required-scopes": [
+          "analytics.read"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReportResult"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationError"
+          }
+        }
+      }
+    },
+    "/analytics/funnels": {
+      "post": {
+        "operationId": "analytics.funnels",
+        "summary": "Run a funnel",
+        "tags": [
+          "analytics"
+        ],
+        "description": "Steps of events with property filters, conversion window, order, profile filter, breakdown by the first step; conversion and time between steps. Runs the report in ClickHouse (up to 30 s; results cached for 5 minutes). Rate limit: 30 report calculations per minute per key, separate from the general API limit. The response holds the normalized `definition` and the result — the same as the analytics pages.\n\nRequires key permission(s): `analytics.read`.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FunnelQuery"
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "secretKey": []
+          }
+        ],
+        "x-required-scopes": [
+          "analytics.read"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FunnelResult"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationError"
+          }
+        }
+      }
+    },
+    "/analytics/retention": {
+      "post": {
+        "operationId": "analytics.retention",
+        "summary": "Run a retention report",
+        "tags": [
+          "analytics"
+        ],
+        "description": "Cohorts by the first start event and returns by the return event per day, week or month. Runs the report in ClickHouse (up to 30 s; results cached for 5 minutes). Rate limit: 30 report calculations per minute per key, separate from the general API limit. The response holds the normalized `definition` and the result — the same as the analytics pages.\n\nRequires key permission(s): `analytics.read`.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RetentionQuery"
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "secretKey": []
+          }
+        ],
+        "x-required-scopes": [
+          "analytics.read"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RetentionResult"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationError"
+          }
+        }
+      }
+    },
+    "/analytics/paths": {
+      "post": {
+        "operationId": "analytics.paths",
+        "summary": "Run a paths report",
+        "tags": [
+          "analytics"
+        ],
+        "description": "Frequent event sequences after or before the anchor event; nodes and links for a Sankey diagram and the most frequent paths. Runs the report in ClickHouse (up to 30 s; results cached for 5 minutes). Rate limit: 30 report calculations per minute per key, separate from the general API limit. The response holds the normalized `definition` and the result — the same as the analytics pages.\n\nRequires key permission(s): `analytics.read`.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PathQuery"
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "secretKey": []
+          }
+        ],
+        "x-required-scopes": [
+          "analytics.read"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PathResult"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationError"
+          }
+        }
+      }
+    },
+    "/analytics/revenue": {
+      "post": {
+        "operationId": "analytics.revenue",
+        "summary": "Run a revenue report",
+        "tags": [
+          "analytics"
+        ],
+        "description": "Revenue, orders, average order value, new and returning buyers, LTV by first purchase cohort, top products and categories in the project currency. Runs the report in ClickHouse (up to 30 s; results cached for 5 minutes). Rate limit: 30 report calculations per minute per key, separate from the general API limit. The response holds the normalized `definition` and the result — the same as the analytics pages.\n\nRequires key permission(s): `analytics.read`.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RevenueQuery"
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "secretKey": []
+          }
+        ],
+        "x-required-scopes": [
+          "analytics.read"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RevenueResult"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationError"
+          }
+        }
+      }
+    },
+    "/analytics/traffic": {
+      "post": {
+        "operationId": "analytics.traffic",
+        "summary": "Run a traffic sources report",
+        "tags": [
+          "analytics"
+        ],
+        "description": "Website visits by channel, source, campaign, referring site or landing page with new profiles, bounces, conversions and revenue. Runs the report in ClickHouse (up to 30 s; results cached for 5 minutes). Rate limit: 30 report calculations per minute per key, separate from the general API limit. The response holds the normalized `definition` and the result — the same as the analytics pages.\n\nRequires key permission(s): `analytics.read`.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TrafficQuery"
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "secretKey": []
+          }
+        ],
+        "x-required-scopes": [
+          "analytics.read"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TrafficResult"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationError"
+          }
+        }
+      }
+    },
+    "/analytics/attribution": {
+      "post": {
+        "operationId": "analytics.attribution",
+        "summary": "Run a revenue attribution report",
+        "tags": [
+          "analytics"
+        ],
+        "description": "Revenue attributed to platform clicks (campaigns, journeys, messages, recommendations, search) by the last click, first click and linear models. Runs the report in ClickHouse (up to 30 s; results cached for 5 minutes). Rate limit: 30 report calculations per minute per key, separate from the general API limit. The response holds the normalized `definition` and the result — the same as the analytics pages.\n\nRequires key permission(s): `analytics.read`.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AttributionQuery"
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "secretKey": []
+          }
+        ],
+        "x-required-scopes": [
+          "analytics.read"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AttributionResult"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationError"
+          }
+        }
+      }
+    },
+    "/analytics/saved-reports": {
+      "get": {
+        "operationId": "analytics.savedReports.index",
+        "summary": "List saved reports",
+        "tags": [
+          "analytics"
+        ],
+        "description": "Requires key permission(s): `analytics.read`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Limit"
+          },
+          {
+            "$ref": "#/components/parameters/Cursor"
+          },
+          {
+            "name": "type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/AnalyticsReportType"
+            }
+          }
+        ],
+        "security": [
+          {
+            "secretKey": []
+          }
+        ],
+        "x-required-scopes": [
+          "analytics.read"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "data",
+                    "next_cursor"
+                  ],
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/SavedReport"
+                      }
+                    },
+                    "next_cursor": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "description": "Pass as `cursor` to get the next page; null on the last page."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      },
+      "post": {
+        "operationId": "analytics.savedReports.store",
+        "summary": "Save a report",
+        "tags": [
+          "analytics"
+        ],
+        "description": "The definition is validated and normalized by the report type; errors come with `definition.*` paths.\n\nRequires key permission(s): `analytics.write`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SavedReportInput"
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "secretKey": []
+          }
+        ],
+        "x-required-scopes": [
+          "analytics.write"
+        ],
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SavedReportDetail"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationError"
+          }
+        }
+      }
+    },
+    "/analytics/saved-reports/{report}": {
+      "get": {
+        "operationId": "analytics.savedReports.show",
+        "summary": "Get a saved report",
+        "tags": [
+          "analytics"
+        ],
+        "description": "Requires key permission(s): `analytics.read`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/SavedReportId"
+          }
+        ],
+        "security": [
+          {
+            "secretKey": []
+          }
+        ],
+        "x-required-scopes": [
+          "analytics.read"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SavedReportDetail"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      },
+      "patch": {
+        "operationId": "analytics.savedReports.update",
+        "summary": "Update a saved report",
+        "tags": [
+          "analytics"
+        ],
+        "description": "The report type cannot be changed.\n\nRequires key permission(s): `analytics.write`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/SavedReportId"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SavedReportPatch"
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "secretKey": []
+          }
+        ],
+        "x-required-scopes": [
+          "analytics.write"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SavedReportDetail"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationError"
+          }
+        }
+      },
+      "delete": {
+        "operationId": "analytics.savedReports.destroy",
+        "summary": "Delete a saved report",
+        "tags": [
+          "analytics"
+        ],
+        "description": "Its cards are removed from dashboards; its email schedules are deleted.\n\nRequires key permission(s): `analytics.write`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/SavedReportId"
+          }
+        ],
+        "security": [
+          {
+            "secretKey": []
+          }
+        ],
+        "x-required-scopes": [
+          "analytics.write"
+        ],
+        "responses": {
+          "204": {
+            "description": "Deleted"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/analytics/saved-reports/{report}/result": {
+      "post": {
+        "operationId": "analytics.savedReports.result",
+        "summary": "Run a saved report",
+        "tags": [
+          "analytics"
+        ],
+        "description": "Optional `period` replaces the period of the saved definition. Runs the report in ClickHouse (up to 30 s; results cached for 5 minutes). Rate limit: 30 report calculations per minute per key, separate from the general API limit. The response holds the normalized `definition` and the result — the same as the analytics pages.\n\nRequires key permission(s): `analytics.read`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/SavedReportId"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "period": {
+                    "$ref": "#/components/schemas/AnalyticsPeriod"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "secretKey": []
+          }
+        ],
+        "x-required-scopes": [
+          "analytics.read"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "description": "The result of the report type — see the corresponding run operation.",
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationError"
+          }
+        }
+      }
+    },
+    "/analytics/dashboards": {
+      "get": {
+        "operationId": "analytics.dashboards.index",
+        "summary": "List dashboards",
+        "tags": [
+          "analytics"
+        ],
+        "description": "Requires key permission(s): `analytics.read`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Limit"
+          },
+          {
+            "$ref": "#/components/parameters/Cursor"
+          }
+        ],
+        "security": [
+          {
+            "secretKey": []
+          }
+        ],
+        "x-required-scopes": [
+          "analytics.read"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "data",
+                    "next_cursor"
+                  ],
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Dashboard"
+                      }
+                    },
+                    "next_cursor": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "description": "Pass as `cursor` to get the next page; null on the last page."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      },
+      "post": {
+        "operationId": "analytics.dashboards.store",
+        "summary": "Create a dashboard",
+        "tags": [
+          "analytics"
+        ],
+        "description": "Requires key permission(s): `analytics.write`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DashboardInput"
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "secretKey": []
+          }
+        ],
+        "x-required-scopes": [
+          "analytics.write"
+        ],
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Dashboard"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationError"
+          }
+        }
+      }
+    },
+    "/analytics/dashboards/{dashboard}": {
+      "get": {
+        "operationId": "analytics.dashboards.show",
+        "summary": "Get a dashboard",
+        "tags": [
+          "analytics"
+        ],
+        "description": "Requires key permission(s): `analytics.read`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/DashboardId"
+          }
+        ],
+        "security": [
+          {
+            "secretKey": []
+          }
+        ],
+        "x-required-scopes": [
+          "analytics.read"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Dashboard"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      },
+      "patch": {
+        "operationId": "analytics.dashboards.update",
+        "summary": "Update a dashboard",
+        "tags": [
+          "analytics"
+        ],
+        "description": "Fields not sent stay unchanged; `layout` replaces the whole layout.\n\nRequires key permission(s): `analytics.write`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/DashboardId"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DashboardPatch"
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "secretKey": []
+          }
+        ],
+        "x-required-scopes": [
+          "analytics.write"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Dashboard"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationError"
+          }
+        }
+      },
+      "delete": {
+        "operationId": "analytics.dashboards.destroy",
+        "summary": "Delete a dashboard",
+        "tags": [
+          "analytics"
+        ],
+        "description": "Saved reports stay; email schedules of the dashboard are deleted.\n\nRequires key permission(s): `analytics.write`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/DashboardId"
+          }
+        ],
+        "security": [
+          {
+            "secretKey": []
+          }
+        ],
+        "x-required-scopes": [
+          "analytics.write"
+        ],
+        "responses": {
+          "204": {
+            "description": "Deleted"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
           }
         }
       }
@@ -4350,6 +5333,22 @@
       },
       "TemplateId": {
         "name": "template",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "integer"
+        }
+      },
+      "SavedReportId": {
+        "name": "report",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "integer"
+        }
+      },
+      "DashboardId": {
+        "name": "dashboard",
         "in": "path",
         "required": true,
         "schema": {
@@ -5916,6 +6915,1076 @@
               "additionalProperties": true
             },
             "description": "Other language versions; each is validated like `content`. Omit to keep the stored versions, pass `{}` to delete them."
+          }
+        }
+      },
+      "AnalyticsReportType": {
+        "type": "string",
+        "enum": [
+          "report",
+          "funnel",
+          "retention",
+          "paths",
+          "revenue",
+          "traffic",
+          "attribution"
+        ]
+      },
+      "AnalyticsPeriod": {
+        "oneOf": [
+          {
+            "type": "object",
+            "required": [
+              "last"
+            ],
+            "properties": {
+              "last": {
+                "type": "integer",
+                "enum": [
+                  7,
+                  14,
+                  30,
+                  90,
+                  180,
+                  365
+                ],
+                "description": "Last N days including today, in the project timezone"
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": [
+              "from",
+              "to"
+            ],
+            "properties": {
+              "from": {
+                "type": "string",
+                "format": "date"
+              },
+              "to": {
+                "type": "string",
+                "format": "date"
+              }
+            },
+            "description": "Dates in the project timezone, up to 731 days"
+          }
+        ]
+      },
+      "PropertyFilter": {
+        "type": "object",
+        "required": [
+          "key",
+          "operator"
+        ],
+        "properties": {
+          "key": {
+            "type": "string",
+            "description": "Property key from the event catalog"
+          },
+          "operator": {
+            "type": "string",
+            "description": "Operator of the property type, as in segment rules"
+          },
+          "value": {
+            "description": "Value for the operator; absent for is_set / is_not_set"
+          }
+        }
+      },
+      "ProfileRules": {
+        "type": [
+          "object",
+          "null"
+        ],
+        "description": "Segment rules (docs/architecture/segmentation.md): only events of matching profiles are counted. Null or an empty group — all profiles.",
+        "additionalProperties": true
+      },
+      "Breakdown": {
+        "type": [
+          "object",
+          "null"
+        ],
+        "required": [
+          "source",
+          "key"
+        ],
+        "properties": {
+          "source": {
+            "type": "string",
+            "enum": [
+              "property",
+              "context"
+            ]
+          },
+          "key": {
+            "type": "string",
+            "description": "Event property, or a page field: page.path, page.referrer, campaign.source, campaign.medium, campaign.name, locale"
+          }
+        }
+      },
+      "AnalyticsInterval": {
+        "type": "string",
+        "enum": [
+          "day",
+          "week",
+          "month"
+        ]
+      },
+      "ReportQuery": {
+        "type": "object",
+        "required": [
+          "series"
+        ],
+        "properties": {
+          "series": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 5,
+            "items": {
+              "type": "object",
+              "properties": {
+                "event": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "metric": {
+                  "type": "string",
+                  "enum": [
+                    "count",
+                    "profiles",
+                    "per_profile",
+                    "sum",
+                    "avg"
+                  ]
+                },
+                "property": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "filters": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PropertyFilter"
+                  }
+                }
+              }
+            }
+          },
+          "profiles": {
+            "$ref": "#/components/schemas/ProfileRules"
+          },
+          "breakdown": {
+            "$ref": "#/components/schemas/Breakdown"
+          },
+          "interval": {
+            "$ref": "#/components/schemas/AnalyticsInterval"
+          },
+          "period": {
+            "$ref": "#/components/schemas/AnalyticsPeriod"
+          },
+          "compare": {
+            "type": "boolean"
+          }
+        }
+      },
+      "FunnelQuery": {
+        "type": "object",
+        "required": [
+          "steps"
+        ],
+        "properties": {
+          "steps": {
+            "type": "array",
+            "minItems": 2,
+            "maxItems": 10,
+            "items": {
+              "type": "object",
+              "required": [
+                "event"
+              ],
+              "properties": {
+                "event": {
+                  "type": "string"
+                },
+                "filters": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PropertyFilter"
+                  }
+                }
+              }
+            }
+          },
+          "window": {
+            "type": "object",
+            "properties": {
+              "amount": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "unit": {
+                "type": "string",
+                "enum": [
+                  "minute",
+                  "hour",
+                  "day"
+                ]
+              }
+            },
+            "description": "Conversion window from the first step, up to 90 days"
+          },
+          "order": {
+            "type": "string",
+            "enum": [
+              "sequential",
+              "strict"
+            ]
+          },
+          "profiles": {
+            "$ref": "#/components/schemas/ProfileRules"
+          },
+          "breakdown": {
+            "$ref": "#/components/schemas/Breakdown"
+          },
+          "period": {
+            "$ref": "#/components/schemas/AnalyticsPeriod"
+          }
+        }
+      },
+      "RetentionQuery": {
+        "type": "object",
+        "required": [
+          "start"
+        ],
+        "properties": {
+          "start": {
+            "type": "object",
+            "properties": {
+              "event": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "filters": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/PropertyFilter"
+                }
+              }
+            }
+          },
+          "return": {
+            "type": "object",
+            "properties": {
+              "event": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "filters": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/PropertyFilter"
+                }
+              }
+            }
+          },
+          "cohort": {
+            "type": "string",
+            "enum": [
+              "first",
+              "period"
+            ]
+          },
+          "interval": {
+            "$ref": "#/components/schemas/AnalyticsInterval"
+          },
+          "periods": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 30,
+            "description": "Up to 30 days, 12 weeks or 12 months"
+          },
+          "returns": {
+            "type": "string",
+            "enum": [
+              "exact",
+              "rolling"
+            ]
+          },
+          "profiles": {
+            "$ref": "#/components/schemas/ProfileRules"
+          },
+          "period": {
+            "$ref": "#/components/schemas/AnalyticsPeriod"
+          }
+        }
+      },
+      "PathQuery": {
+        "type": "object",
+        "required": [
+          "event"
+        ],
+        "properties": {
+          "event": {
+            "type": "string"
+          },
+          "filters": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PropertyFilter"
+            }
+          },
+          "direction": {
+            "type": "string",
+            "enum": [
+              "after",
+              "before"
+            ]
+          },
+          "steps": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 5
+          },
+          "gap_minutes": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 1440
+          },
+          "exclude": {
+            "type": "array",
+            "maxItems": 20,
+            "items": {
+              "type": "string"
+            }
+          },
+          "profiles": {
+            "$ref": "#/components/schemas/ProfileRules"
+          },
+          "period": {
+            "$ref": "#/components/schemas/AnalyticsPeriod"
+          }
+        }
+      },
+      "RevenueQuery": {
+        "type": "object",
+        "properties": {
+          "event": {
+            "type": "string",
+            "description": "Purchase event; by default from the prediction settings"
+          },
+          "amount": {
+            "type": "string",
+            "description": "Numeric order amount property"
+          },
+          "product_property": {
+            "type": "string"
+          },
+          "interval": {
+            "$ref": "#/components/schemas/AnalyticsInterval"
+          },
+          "ltv_interval": {
+            "type": "string",
+            "enum": [
+              "week",
+              "month"
+            ]
+          },
+          "ltv_periods": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 12
+          },
+          "profiles": {
+            "$ref": "#/components/schemas/ProfileRules"
+          },
+          "period": {
+            "$ref": "#/components/schemas/AnalyticsPeriod"
+          }
+        }
+      },
+      "TrafficQuery": {
+        "type": "object",
+        "properties": {
+          "dimension": {
+            "type": "string",
+            "enum": [
+              "channel",
+              "source",
+              "source_medium",
+              "campaign",
+              "referrer",
+              "landing"
+            ]
+          },
+          "interval": {
+            "$ref": "#/components/schemas/AnalyticsInterval"
+          },
+          "event": {
+            "type": "string"
+          },
+          "amount": {
+            "type": "string"
+          },
+          "profiles": {
+            "$ref": "#/components/schemas/ProfileRules"
+          },
+          "period": {
+            "$ref": "#/components/schemas/AnalyticsPeriod"
+          }
+        }
+      },
+      "AttributionQuery": {
+        "type": "object",
+        "properties": {
+          "window_days": {
+            "type": "integer",
+            "enum": [
+              1,
+              3,
+              7,
+              14,
+              30
+            ]
+          },
+          "model": {
+            "type": "string",
+            "enum": [
+              "last",
+              "first",
+              "linear"
+            ]
+          },
+          "interval": {
+            "$ref": "#/components/schemas/AnalyticsInterval"
+          },
+          "event": {
+            "type": "string"
+          },
+          "amount": {
+            "type": "string"
+          },
+          "profiles": {
+            "$ref": "#/components/schemas/ProfileRules"
+          },
+          "period": {
+            "$ref": "#/components/schemas/AnalyticsPeriod"
+          }
+        }
+      },
+      "ReportResult": {
+        "type": "object",
+        "required": [
+          "definition",
+          "period",
+          "buckets",
+          "series"
+        ],
+        "properties": {
+          "definition": {
+            "type": "object",
+            "description": "Normalized definition",
+            "additionalProperties": true
+          },
+          "period": {
+            "type": "object",
+            "properties": {
+              "from": {
+                "type": "string",
+                "format": "date"
+              },
+              "to": {
+                "type": "string",
+                "format": "date"
+              }
+            }
+          },
+          "buckets": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          "series": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": true
+            },
+            "description": "Per series: index, total, values per bucket, previous period, breakdown"
+          }
+        },
+        "additionalProperties": true
+      },
+      "FunnelResult": {
+        "type": "object",
+        "required": [
+          "definition",
+          "period",
+          "steps",
+          "breakdown"
+        ],
+        "properties": {
+          "definition": {
+            "type": "object",
+            "description": "Normalized definition",
+            "additionalProperties": true
+          },
+          "period": {
+            "type": "object",
+            "properties": {
+              "from": {
+                "type": "string",
+                "format": "date"
+              },
+              "to": {
+                "type": "string",
+                "format": "date"
+              }
+            }
+          },
+          "steps": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": true
+            },
+            "description": "Per step: event, reached, from_start, from_previous, median_seconds, avg_seconds"
+          },
+          "breakdown": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": true
+            },
+            "description": "Per breakdown value: value, steps (reached per step)"
+          },
+          "time_sample": {
+            "type": "number",
+            "description": "Share of profiles used for time between steps"
+          }
+        },
+        "additionalProperties": true
+      },
+      "RetentionResult": {
+        "type": "object",
+        "required": [
+          "definition",
+          "period",
+          "cohorts",
+          "average"
+        ],
+        "properties": {
+          "definition": {
+            "type": "object",
+            "description": "Normalized definition",
+            "additionalProperties": true
+          },
+          "period": {
+            "type": "object",
+            "properties": {
+              "from": {
+                "type": "string",
+                "format": "date"
+              },
+              "to": {
+                "type": "string",
+                "format": "date"
+              }
+            }
+          },
+          "cohorts": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": true
+            },
+            "description": "Per cohort: date, size, values (returned per period, null — not yet), open (period still running)"
+          },
+          "average": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": true
+            },
+            "description": "Per period: period, rate, profiles"
+          }
+        },
+        "additionalProperties": true
+      },
+      "PathResult": {
+        "type": "object",
+        "required": [
+          "definition",
+          "period",
+          "total",
+          "nodes",
+          "links",
+          "paths"
+        ],
+        "properties": {
+          "definition": {
+            "type": "object",
+            "description": "Normalized definition",
+            "additionalProperties": true
+          },
+          "period": {
+            "type": "object",
+            "properties": {
+              "from": {
+                "type": "string",
+                "format": "date"
+              },
+              "to": {
+                "type": "string",
+                "format": "date"
+              }
+            }
+          },
+          "total": {
+            "type": "integer"
+          },
+          "nodes": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": true
+            }
+          },
+          "links": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": true
+            }
+          },
+          "paths": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": true
+            },
+            "description": "Most frequent paths: events, profiles"
+          },
+          "truncated": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": true
+      },
+      "RevenueResult": {
+        "type": "object",
+        "required": [
+          "definition",
+          "period",
+          "summary",
+          "series",
+          "ltv",
+          "products",
+          "categories"
+        ],
+        "properties": {
+          "definition": {
+            "type": "object",
+            "description": "Normalized definition",
+            "additionalProperties": true
+          },
+          "period": {
+            "type": "object",
+            "properties": {
+              "from": {
+                "type": "string",
+                "format": "date"
+              },
+              "to": {
+                "type": "string",
+                "format": "date"
+              }
+            }
+          },
+          "currency": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "other_currency_orders": {
+            "type": "integer"
+          },
+          "summary": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "series": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "ltv": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "products": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": true
+            }
+          },
+          "categories": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": true
+            }
+          }
+        },
+        "additionalProperties": true
+      },
+      "TrafficResult": {
+        "type": "object",
+        "required": [
+          "definition",
+          "period",
+          "summary",
+          "rows",
+          "chart"
+        ],
+        "properties": {
+          "definition": {
+            "type": "object",
+            "description": "Normalized definition",
+            "additionalProperties": true
+          },
+          "period": {
+            "type": "object",
+            "properties": {
+              "from": {
+                "type": "string",
+                "format": "date"
+              },
+              "to": {
+                "type": "string",
+                "format": "date"
+              }
+            }
+          },
+          "currency": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "purchases": {
+            "type": "boolean"
+          },
+          "summary": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "rows": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": true
+            }
+          },
+          "row_count": {
+            "type": "integer"
+          },
+          "chart": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        },
+        "additionalProperties": true
+      },
+      "AttributionResult": {
+        "type": "object",
+        "required": [
+          "definition",
+          "period",
+          "summary",
+          "channels",
+          "items"
+        ],
+        "properties": {
+          "definition": {
+            "type": "object",
+            "description": "Normalized definition",
+            "additionalProperties": true
+          },
+          "period": {
+            "type": "object",
+            "properties": {
+              "from": {
+                "type": "string",
+                "format": "date"
+              },
+              "to": {
+                "type": "string",
+                "format": "date"
+              }
+            }
+          },
+          "currency": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "summary": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "channels": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": true
+            },
+            "description": "Per channel: channel, clicks, touched_orders, revenue and orders by model"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": true
+            },
+            "description": "Per campaign, journey, message channel or widget"
+          },
+          "chart": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        },
+        "additionalProperties": true
+      },
+      "SavedReport": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "type",
+          "created_at",
+          "updated_at"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          },
+          "type": {
+            "$ref": "#/components/schemas/AnalyticsReportType"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "SavedReportDetail": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/SavedReport"
+          },
+          {
+            "type": "object",
+            "required": [
+              "definition",
+              "view"
+            ],
+            "properties": {
+              "definition": {
+                "type": "object",
+                "additionalProperties": true
+              },
+              "view": {
+                "type": "object",
+                "additionalProperties": true,
+                "description": "Page view settings: chart type, metric"
+              }
+            }
+          }
+        ]
+      },
+      "SavedReportInput": {
+        "type": "object",
+        "required": [
+          "name",
+          "type",
+          "definition"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 120
+          },
+          "type": {
+            "$ref": "#/components/schemas/AnalyticsReportType"
+          },
+          "definition": {
+            "type": "object",
+            "description": "Definition of the report type — see the run operations",
+            "additionalProperties": true
+          },
+          "view": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        }
+      },
+      "SavedReportPatch": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 120
+          },
+          "definition": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "view": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        }
+      },
+      "Dashboard": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "layout",
+          "period",
+          "created_at",
+          "updated_at"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          },
+          "layout": {
+            "type": "array",
+            "maxItems": 24,
+            "items": {
+              "type": "object",
+              "required": [
+                "report_id"
+              ],
+              "properties": {
+                "report_id": {
+                  "type": "integer"
+                },
+                "size": {
+                  "type": "string",
+                  "enum": [
+                    "half",
+                    "full"
+                  ]
+                }
+              }
+            }
+          },
+          "period": {
+            "$ref": "#/components/schemas/AnalyticsPeriod"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "DashboardInput": {
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 120
+          },
+          "layout": {
+            "type": "array",
+            "maxItems": 24,
+            "items": {
+              "type": "object",
+              "required": [
+                "report_id"
+              ],
+              "properties": {
+                "report_id": {
+                  "type": "integer"
+                },
+                "size": {
+                  "type": "string",
+                  "enum": [
+                    "half",
+                    "full"
+                  ]
+                }
+              }
+            }
+          },
+          "period": {
+            "$ref": "#/components/schemas/AnalyticsPeriod"
+          }
+        }
+      },
+      "DashboardPatch": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 120
+          },
+          "layout": {
+            "type": "array",
+            "maxItems": 24,
+            "items": {
+              "type": "object",
+              "required": [
+                "report_id"
+              ],
+              "properties": {
+                "report_id": {
+                  "type": "integer"
+                },
+                "size": {
+                  "type": "string",
+                  "enum": [
+                    "half",
+                    "full"
+                  ]
+                }
+              }
+            }
+          },
+          "period": {
+            "$ref": "#/components/schemas/AnalyticsPeriod"
           }
         }
       }

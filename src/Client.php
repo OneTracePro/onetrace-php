@@ -8,6 +8,7 @@ use OneTrace\Http\CurlTransport;
 use OneTrace\Http\Psr18Transport;
 use OneTrace\Http\Requester;
 use OneTrace\Http\Transport;
+use OneTrace\Resource\Analytics;
 use OneTrace\Resource\Campaigns;
 use OneTrace\Resource\Catalog;
 use OneTrace\Resource\Events;
@@ -39,7 +40,7 @@ use Psr\Http\Message\StreamFactoryInterface;
  */
 final class Client
 {
-    public const VERSION = '1.4.0';
+    public const VERSION = '1.5.0';
 
     /**
      * API operations (operationId of the OpenAPI specification) and the methods that call them.
@@ -91,6 +92,24 @@ final class Client
         'journeys.enrollments' => 'journeys.enrollments',
         'journeys.report' => 'journeys.report',
         'journeys.enroll' => 'journeys.enroll',
+        'analytics.reports' => 'analytics.report',
+        'analytics.funnels' => 'analytics.funnel',
+        'analytics.retention' => 'analytics.retention',
+        'analytics.paths' => 'analytics.paths',
+        'analytics.revenue' => 'analytics.revenue',
+        'analytics.traffic' => 'analytics.traffic',
+        'analytics.attribution' => 'analytics.attribution',
+        'analytics.savedReports.index' => 'analytics.savedReports',
+        'analytics.savedReports.store' => 'analytics.createSavedReport',
+        'analytics.savedReports.show' => 'analytics.savedReport',
+        'analytics.savedReports.update' => 'analytics.updateSavedReport',
+        'analytics.savedReports.destroy' => 'analytics.deleteSavedReport',
+        'analytics.savedReports.result' => 'analytics.runSavedReport',
+        'analytics.dashboards.index' => 'analytics.dashboards',
+        'analytics.dashboards.store' => 'analytics.createDashboard',
+        'analytics.dashboards.show' => 'analytics.dashboard',
+        'analytics.dashboards.update' => 'analytics.updateDashboard',
+        'analytics.dashboards.destroy' => 'analytics.deleteDashboard',
         'campaigns.index' => 'campaigns.list',
         'campaigns.store' => 'campaigns.create',
         'campaigns.show' => 'campaigns.get',
@@ -264,6 +283,14 @@ final class Client
     public function campaigns(): Campaigns
     {
         return $this->resource(Campaigns::class);
+    }
+
+    /**
+     * Analytics: reports of every kind, saved reports and dashboards.
+     */
+    public function analytics(): Analytics
+    {
+        return $this->resource(Analytics::class);
     }
 
     /**

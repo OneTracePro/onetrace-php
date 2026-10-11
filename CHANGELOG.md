@@ -2,6 +2,10 @@
 
 All notable changes are documented here. The project follows [Semantic Versioning](https://semver.org/).
 
+## 1.5.0 — 2026-10-11
+
+- `analytics()`: reports of every kind — `report()`, `funnel()`, `retention()`, `paths()`, `revenue()`, `traffic()`, `attribution()`; saved reports (`savedReports()`, `createSavedReport()`, `runSavedReport()` with another period …) and dashboards (`dashboards()`, `createDashboard()` …).
+
 ## 1.4.0 — 2026-10-09
 
 - Catalog languages: `CatalogItem::translate()` and `CatalogItem::translateCategory()` add translations of the name, link and attributes for other languages of the store; recommendations, widgets and search take `language` (the visitor's language) and return products in that translation.
