@@ -13,6 +13,7 @@ use OneTrace\Resource\Campaigns;
 use OneTrace\Resource\Catalog;
 use OneTrace\Resource\Events;
 use OneTrace\Resource\Journeys;
+use OneTrace\Resource\Loyalty;
 use OneTrace\Resource\Products;
 use OneTrace\Resource\Profiles;
 use OneTrace\Resource\Push;
@@ -40,7 +41,7 @@ use Psr\Http\Message\StreamFactoryInterface;
  */
 final class Client
 {
-    public const VERSION = '1.5.0';
+    public const VERSION = '1.6.0';
 
     /**
      * API operations (operationId of the OpenAPI specification) and the methods that call them.
@@ -110,6 +111,14 @@ final class Client
         'analytics.dashboards.show' => 'analytics.dashboard',
         'analytics.dashboards.update' => 'analytics.updateDashboard',
         'analytics.dashboards.destroy' => 'analytics.deleteDashboard',
+        'loyalty.calculate' => 'loyalty.calculate',
+        'loyalty.profiles.show' => 'loyalty.account',
+        'loyalty.profiles.transactions' => 'loyalty.transactions',
+        'loyalty.members.store' => 'loyalty.join',
+        'loyalty.redemptions.store' => 'loyalty.hold',
+        'loyalty.redemptions.confirm' => 'loyalty.confirm',
+        'loyalty.redemptions.cancel' => 'loyalty.cancel',
+        'loyalty.adjustments.store' => 'loyalty.adjust',
         'campaigns.index' => 'campaigns.list',
         'campaigns.store' => 'campaigns.create',
         'campaigns.show' => 'campaigns.get',
@@ -291,6 +300,14 @@ final class Client
     public function analytics(): Analytics
     {
         return $this->resource(Analytics::class);
+    }
+
+    /**
+     * Loyalty program: balance and history of members, points at checkout, manual adjustments.
+     */
+    public function loyalty(): Loyalty
+    {
+        return $this->resource(Loyalty::class);
     }
 
     /**

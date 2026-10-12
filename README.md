@@ -199,6 +199,25 @@ $onetrace->analytics()->createDashboard(['name' => 'Weekly', 'layout' => [['repo
 
 Also: `report()` (event report builder), `retention()`, `paths()`, `savedReports()` / `iterateSavedReports()`, `savedReport()`, `updateSavedReport()`, `deleteSavedReport()`, `dashboards()` / `iterateDashboards()`, `dashboard()`, `updateDashboard()`, `deleteDashboard()`.
 
+## Loyalty
+
+Points of the project's loyalty program at checkout and in the customer's account. Needs a secret key with `loyalty.read` (balance, history, calculation) or `loyalty.write` (holds, enrollment, adjustments).
+
+```php
+$customer = Identity::email('anna@example.com');
+
+// Checkout: how many points the cart can take, then hold them for 30 minutes
+$offer = $onetrace->loyalty()->calculate($customer, 1500.0);   // balance, max_points, max_discount, earn_points
+$hold = $onetrace->loyalty()->hold($customer, $offer['max_points'], 'cart-17', 1500.0);
+// … apply $hold['discount'] to the order, then
+$onetrace->loyalty()->confirm($hold['id'], 'A-1001');          // or cancel($hold['id']) if the customer leaves
+
+$account = $onetrace->loyalty()->account('email', 'anna@example.com'); // balance, pending, tier, expiring
+$onetrace->loyalty()->adjust($customer, 500, 'Compensation for a late delivery');
+```
+
+A hold that is not confirmed returns to the balance in 30 minutes; refunds and cancellations of the order (`order_refunded` / `order_cancelled`) return the redeemed points automatically. Also: `transactions()` / `iterateTransactions()`, `join()` for programs with explicit enrollment.
+
 ## Message templates
 
 Templates have language versions: `content` in the main `language`, other languages in `translations`. Each recipient gets the version for the `language` trait of their profile, otherwise the main one.

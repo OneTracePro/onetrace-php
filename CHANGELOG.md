@@ -2,6 +2,10 @@
 
 All notable changes are documented here. The project follows [Semantic Versioning](https://semver.org/).
 
+## 1.6.0 — 2026-10-12
+
+- `loyalty()`: the loyalty program — `calculate()` points for a cart, `hold()` / `confirm()` / `cancel()` points at checkout, `account()` and `transactions()` of a member, `join()`, `adjust()` with a reason.
+
 ## 1.5.0 — 2026-10-11
 
 - `analytics()`: reports of every kind — `report()`, `funnel()`, `retention()`, `paths()`, `revenue()`, `traffic()`, `attribution()`; saved reports (`savedReports()`, `createSavedReport()`, `runSavedReport()` with another period …) and dashboards (`dashboards()`, `createDashboard()` …).

@@ -4521,6 +4521,9 @@
           "401": {
             "$ref": "#/components/responses/Unauthorized"
           },
+          "402": {
+            "description": "Revenue, traffic and attribution reports are not in the plan of the project (code feature_unavailable, feature revenue_analytics)"
+          },
           "403": {
             "$ref": "#/components/responses/Forbidden"
           },
@@ -4573,6 +4576,9 @@
           "401": {
             "$ref": "#/components/responses/Unauthorized"
           },
+          "402": {
+            "description": "Revenue, traffic and attribution reports are not in the plan of the project (code feature_unavailable, feature revenue_analytics)"
+          },
           "403": {
             "$ref": "#/components/responses/Forbidden"
           },
@@ -4624,6 +4630,9 @@
           },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
+          },
+          "402": {
+            "description": "Revenue, traffic and attribution reports are not in the plan of the project (code feature_unavailable, feature revenue_analytics)"
           },
           "403": {
             "$ref": "#/components/responses/Forbidden"
@@ -4961,6 +4970,9 @@
           "401": {
             "$ref": "#/components/responses/Unauthorized"
           },
+          "402": {
+            "description": "Revenue, traffic and attribution reports are not in the plan of the project (code feature_unavailable, feature revenue_analytics)"
+          },
           "403": {
             "$ref": "#/components/responses/Forbidden"
           },
@@ -5239,6 +5251,542 @@
           }
         }
       }
+    },
+    "/loyalty/calculate": {
+      "post": {
+        "operationId": "loyalty.calculate",
+        "summary": "Calculate points for a cart",
+        "tags": [
+          "loyalty"
+        ],
+        "description": "How many points the profile can use for a cart of `amount` (at most `max_redeem_percent` of the amount and the balance), the discount in the project currency and an estimate of points the order will earn at the member's tier (rules are not included — they depend on the order).\n\nRequires key permission(s): `loyalty.read`.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "profile",
+                  "amount"
+                ],
+                "properties": {
+                  "profile": {
+                    "$ref": "#/components/schemas/LoyaltyProfileRef"
+                  },
+                  "amount": {
+                    "type": "number",
+                    "minimum": 0,
+                    "description": "Cart amount in the project currency"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "secretKey": []
+          }
+        ],
+        "x-required-scopes": [
+          "loyalty.read"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoyaltyCalculation"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationError"
+          }
+        }
+      }
+    },
+    "/loyalty/profiles/{type}/{value}": {
+      "get": {
+        "operationId": "loyalty.profiles.show",
+        "summary": "Loyalty account of a profile",
+        "tags": [
+          "loyalty"
+        ],
+        "description": "Balance, points waiting for the return period, tier, purchase sum of the tier window and the nearest expiry. A profile that has not joined returns `member: false`.\n\nRequires key permission(s): `loyalty.read`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdentityType"
+          },
+          {
+            "$ref": "#/components/parameters/IdentityValue"
+          }
+        ],
+        "security": [
+          {
+            "secretKey": []
+          }
+        ],
+        "x-required-scopes": [
+          "loyalty.read"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoyaltyAccount"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/loyalty/profiles/{type}/{value}/transactions": {
+      "get": {
+        "operationId": "loyalty.profiles.transactions",
+        "summary": "Point history of a profile",
+        "tags": [
+          "loyalty"
+        ],
+        "description": "Ledger operations from the newest: `earn`, `cancel`, `expire`, `adjust`, `redeem` (a hold or a redemption), `refund` (points returned). Cursor pages.\n\nRequires key permission(s): `loyalty.read`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdentityType"
+          },
+          {
+            "$ref": "#/components/parameters/IdentityValue"
+          },
+          {
+            "$ref": "#/components/parameters/Limit"
+          },
+          {
+            "$ref": "#/components/parameters/Cursor"
+          }
+        ],
+        "security": [
+          {
+            "secretKey": []
+          }
+        ],
+        "x-required-scopes": [
+          "loyalty.read"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/LoyaltyTransaction"
+                      }
+                    },
+                    "next_cursor": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/loyalty/members": {
+      "post": {
+        "operationId": "loyalty.members.store",
+        "summary": "Join the program",
+        "tags": [
+          "loyalty"
+        ],
+        "description": "Opens an account for an existing profile — for programs with explicit joining (`enrollment: explicit`). Returns 200 if the profile is already a member.\n\nRequires key permission(s): `loyalty.write`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "profile"
+                ],
+                "properties": {
+                  "profile": {
+                    "$ref": "#/components/schemas/LoyaltyProfileRef"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "secretKey": []
+          }
+        ],
+        "x-required-scopes": [
+          "loyalty.write"
+        ],
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoyaltyAccount"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationError"
+          }
+        }
+      }
+    },
+    "/loyalty/redemptions": {
+      "post": {
+        "operationId": "loyalty.redemptions.store",
+        "summary": "Hold points for a cart",
+        "tags": [
+          "loyalty"
+        ],
+        "description": "Takes points off the balance (earliest expiring first) and holds them for 30 minutes while the order is placed. A new hold for the same `cart_id` returns the previous one. With `amount`, points are limited to the payable share of the cart. Confirm with the order number or cancel; unconfirmed holds return automatically.\n\nRequires key permission(s): `loyalty.write`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "profile",
+                  "points",
+                  "cart_id"
+                ],
+                "properties": {
+                  "profile": {
+                    "$ref": "#/components/schemas/LoyaltyProfileRef"
+                  },
+                  "points": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "cart_id": {
+                    "type": "string",
+                    "maxLength": 255
+                  },
+                  "amount": {
+                    "type": "number",
+                    "minimum": 0
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "secretKey": []
+          }
+        ],
+        "x-required-scopes": [
+          "loyalty.write"
+        ],
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoyaltyRedemption"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationError"
+          }
+        }
+      }
+    },
+    "/loyalty/redemptions/{redemption}/confirm": {
+      "post": {
+        "operationId": "loyalty.redemptions.confirm",
+        "summary": "Confirm a redemption",
+        "tags": [
+          "loyalty"
+        ],
+        "description": "Binds the held points to the order. Refunds and cancellations of the order (events `order_refunded`, `order_cancelled`) return the points proportionally. Repeating with the same order changes nothing; an expired or cancelled hold — 422.\n\nRequires key permission(s): `loyalty.write`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/RedemptionId"
+          },
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "order_id"
+                ],
+                "properties": {
+                  "order_id": {
+                    "type": "string",
+                    "maxLength": 255
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "secretKey": []
+          }
+        ],
+        "x-required-scopes": [
+          "loyalty.write"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoyaltyRedemption"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationError"
+          }
+        }
+      }
+    },
+    "/loyalty/redemptions/{redemption}/cancel": {
+      "post": {
+        "operationId": "loyalty.redemptions.cancel",
+        "summary": "Cancel a redemption",
+        "tags": [
+          "loyalty"
+        ],
+        "description": "Returns the points of a hold or a confirmed redemption to the balance (into their original lots while they have not expired).\n\nRequires key permission(s): `loyalty.write`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/RedemptionId"
+          }
+        ],
+        "security": [
+          {
+            "secretKey": []
+          }
+        ],
+        "x-required-scopes": [
+          "loyalty.write"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoyaltyRedemption"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/loyalty/adjustments": {
+      "post": {
+        "operationId": "loyalty.adjustments.store",
+        "summary": "Adjust points manually",
+        "tags": [
+          "loyalty"
+        ],
+        "description": "Adds points (a lot available at once, with the program lifetime) or takes them off the balance (not more than available), with a reason recorded in the history and the audit log. Send `Idempotency-Key` to make retries safe.\n\nRequires key permission(s): `loyalty.write`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "profile",
+                  "points",
+                  "reason"
+                ],
+                "properties": {
+                  "profile": {
+                    "$ref": "#/components/schemas/LoyaltyProfileRef"
+                  },
+                  "points": {
+                    "type": "integer",
+                    "description": "Positive — add, negative — take off"
+                  },
+                  "reason": {
+                    "type": "string",
+                    "maxLength": 500
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "secretKey": []
+          }
+        ],
+        "x-required-scopes": [
+          "loyalty.write"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoyaltyAccount"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationError"
+          }
+        }
+      }
     }
   },
   "components": {
@@ -5354,6 +5902,15 @@
         "schema": {
           "type": "integer"
         }
+      },
+      "RedemptionId": {
+        "name": "redemption",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "string"
+        },
+        "description": "Redemption id from the hold response."
       }
     },
     "responses": {
@@ -7985,6 +8542,198 @@
           },
           "period": {
             "$ref": "#/components/schemas/AnalyticsPeriod"
+          }
+        }
+      },
+      "LoyaltyProfileRef": {
+        "type": "object",
+        "required": [
+          "type",
+          "value"
+        ],
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "user_id",
+              "anonymous_id",
+              "email",
+              "phone",
+              "telegram_chat_id",
+              "viber_id",
+              "web_push"
+            ]
+          },
+          "value": {
+            "type": "string"
+          }
+        }
+      },
+      "LoyaltyAccount": {
+        "type": "object",
+        "properties": {
+          "member": {
+            "type": "boolean"
+          },
+          "balance": {
+            "type": "integer",
+            "description": "Available points"
+          },
+          "pending": {
+            "type": "integer",
+            "description": "Points waiting for the return period"
+          },
+          "tier": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "tier_spend": {
+            "type": "number"
+          },
+          "expiring": {
+            "type": "integer",
+            "description": "Points expiring within 30 days"
+          },
+          "expires_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "enrolled_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          }
+        }
+      },
+      "LoyaltyCalculation": {
+        "type": "object",
+        "properties": {
+          "member": {
+            "type": "boolean"
+          },
+          "balance": {
+            "type": "integer"
+          },
+          "tier": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "max_points": {
+            "type": "integer"
+          },
+          "max_discount": {
+            "type": "number"
+          },
+          "earn_points": {
+            "type": "integer"
+          },
+          "point_value": {
+            "type": "number"
+          },
+          "currency": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "LoyaltyRedemption": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "held",
+              "confirmed",
+              "cancelled",
+              "expired"
+            ]
+          },
+          "points": {
+            "type": "integer"
+          },
+          "returned": {
+            "type": "integer"
+          },
+          "discount": {
+            "type": "number"
+          },
+          "cart_id": {
+            "type": "string"
+          },
+          "order_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "held_until": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "confirmed_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          }
+        }
+      },
+      "LoyaltyTransaction": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "earn",
+              "cancel",
+              "expire",
+              "adjust",
+              "redeem",
+              "refund"
+            ]
+          },
+          "points": {
+            "type": "integer"
+          },
+          "reference": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "reason": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "rule": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
           }
         }
       }
