@@ -7,7 +7,7 @@ namespace OneTrace\Resource;
 use OneTrace\Page;
 
 /**
- * Loyalty program: balance and history of a member, points at checkout, manual adjustments. Reading needs a secret
+ * Loyalty program: balance and history of a member, points at checkout, referrals, manual adjustments. Reading needs a secret
  * key with loyalty.read, changes need loyalty.write. A profile is an identity: Identity::email('anna@example.com').
  *
  * Checkout: calculate() shows how many points the cart can take, hold() reserves them for 30 minutes,
@@ -29,7 +29,8 @@ final class Loyalty extends Resource
     }
 
     /**
-     * The member's account: balance, pending, tier, tier_spend, expiring, expires_at.
+     * The member's account: balance, pending, tier, tier_spend, expiring, expires_at, referral_code, referral_url and
+     * referrals (invited, rewarded, points).
      *
      * @return array<string, mixed>
      */
@@ -73,6 +74,24 @@ final class Loyalty extends Resource
     {
         return $this->requester->request('POST', '/loyalty/members', [
             'json' => ['profile' => $profile],
+            'idempotent' => true,
+            'idempotency_key' => $idempotencyKey,
+        ]);
+    }
+
+    /**
+     * A friend's referral code, e.g. from the registration form or the cdp_ref cookie of the tracker. Counts only for a
+     * new customer; an identified profile joins and gets the friend reward at once. A repeat returns the same
+     * referral and gives a waiting reward. Throws ValidationException (code) when the code cannot be applied.
+     *
+     * @param array{type: string, value: string} $profile
+     *
+     * @return array<string, mixed> status, code, friend_points, friend_promo_code, rewarded, expires_at
+     */
+    public function refer(array $profile, string $code, ?string $idempotencyKey = null): array
+    {
+        return $this->requester->request('POST', '/loyalty/referrals', [
+            'json' => ['profile' => $profile, 'code' => $code],
             'idempotent' => true,
             'idempotency_key' => $idempotencyKey,
         ]);

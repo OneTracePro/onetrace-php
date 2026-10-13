@@ -5509,6 +5509,89 @@
         }
       }
     },
+    "/loyalty/referrals": {
+      "post": {
+        "operationId": "loyalty.referrals.store",
+        "summary": "Apply a friend's referral code",
+        "tags": [
+          "loyalty"
+        ],
+        "description": "For the registration form of a store: the profile came with the code of a member. The referral counts only for a new customer (no orders, not the member themselves); an identified profile joins the program and gets the friend reward at once (points and, if set, a promo code). 201 — counted now, 200 — counted before. 422 on `code`: referrals off, unknown code, own code, existing customer.\n\nRequires key permission(s): `loyalty.write`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "profile",
+                  "code"
+                ],
+                "properties": {
+                  "profile": {
+                    "$ref": "#/components/schemas/LoyaltyProfileRef"
+                  },
+                  "code": {
+                    "type": "string",
+                    "maxLength": 16
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "secretKey": []
+          }
+        ],
+        "x-required-scopes": [
+          "loyalty.write"
+        ],
+        "responses": {
+          "201": {
+            "description": "Counted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoyaltyReferral"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "Counted before",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoyaltyReferral"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationError"
+          }
+        }
+      }
+    },
     "/loyalty/redemptions": {
       "post": {
         "operationId": "loyalty.redemptions.store",
@@ -5787,6 +5870,516 @@
           }
         }
       }
+    },
+    "/promo/pools": {
+      "get": {
+        "operationId": "promo.pools.index",
+        "summary": "List promo code pools",
+        "tags": [
+          "promo"
+        ],
+        "description": "Pools of the project with code counts by status, uses and the revenue of orders with codes.\n\nRequires key permission(s): `promo.read`.",
+        "security": [
+          {
+            "secretKey": []
+          }
+        ],
+        "x-required-scopes": [
+          "promo.read"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/PromoPool"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/promo/pools/{key}": {
+      "get": {
+        "operationId": "promo.pools.show",
+        "summary": "Get a pool",
+        "tags": [
+          "promo"
+        ],
+        "description": "One pool with its statistics.\n\nRequires key permission(s): `promo.read`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/PromoPoolKey"
+          }
+        ],
+        "security": [
+          {
+            "secretKey": []
+          }
+        ],
+        "x-required-scopes": [
+          "promo.read"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PromoPool"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationError"
+          }
+        }
+      }
+    },
+    "/promo/pools/{key}/codes": {
+      "get": {
+        "operationId": "promo.codes.index",
+        "summary": "Codes of a pool (sync)",
+        "tags": [
+          "promo"
+        ],
+        "description": "For store plugins: codes created or changed after the cursor, oldest first. Store `next` and pass it as `since` next time; an empty page returns the same cursor. Changes of the last 10 seconds come with the next call.\n\nRequires key permission(s): `promo.read`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/PromoPoolKey"
+          },
+          {
+            "name": "since",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Cursor from the previous response."
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 1000,
+              "default": 500
+            }
+          }
+        ],
+        "security": [
+          {
+            "secretKey": []
+          }
+        ],
+        "x-required-scopes": [
+          "promo.read"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/PromoCode"
+                      }
+                    },
+                    "next": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "description": "Cursor for the next call."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationError"
+          }
+        }
+      },
+      "post": {
+        "operationId": "promo.codes.store",
+        "summary": "Add codes to a pool",
+        "tags": [
+          "promo"
+        ],
+        "description": "Generates `count` codes (prefix and length of the pool, up to 50 000) or uploads ready `codes` (up to 100 000, e.g. coupons exported from the store). Codes that already exist in the project are skipped. Only for `unique` pools.\n\nRequires key permission(s): `promo.write`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/PromoPoolKey"
+          },
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "count": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 50000
+                  },
+                  "codes": {
+                    "type": "array",
+                    "maxItems": 100000,
+                    "items": {
+                      "type": "string",
+                      "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{2,63}$"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "secretKey": []
+          }
+        ],
+        "x-required-scopes": [
+          "promo.write"
+        ],
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "added": {
+                      "type": "integer"
+                    },
+                    "skipped": {
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationError"
+          }
+        }
+      }
+    },
+    "/promo/pools/{key}/issue": {
+      "post": {
+        "operationId": "promo.codes.issue",
+        "summary": "Issue a code to a profile",
+        "tags": [
+          "promo"
+        ],
+        "description": "A profile with an active code of the pool gets the same code (200); otherwise the next free code is issued (201, event `$promo_code_issued`). A `shared` pool returns its code. 409 with `reason`: `inactive` (paused or outside the period), `limit` (the profile received all its codes), `exhausted` (no free codes).\n\nRequires key permission(s): `promo.write`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/PromoPoolKey"
+          },
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "profile"
+                ],
+                "properties": {
+                  "profile": {
+                    "$ref": "#/components/schemas/IdentityRef"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "secretKey": []
+          }
+        ],
+        "x-required-scopes": [
+          "promo.write"
+        ],
+        "responses": {
+          "201": {
+            "description": "Issued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PromoCode"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "Already issued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PromoCode"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Not issued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    },
+                    "reason": {
+                      "type": "string",
+                      "enum": [
+                        "inactive",
+                        "limit",
+                        "exhausted"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationError"
+          }
+        }
+      }
+    },
+    "/promo/codes/{code}": {
+      "get": {
+        "operationId": "promo.codes.show",
+        "summary": "Check a code",
+        "tags": [
+          "promo"
+        ],
+        "description": "Pool, status, validity and the number of orders with the code.\n\nRequires key permission(s): `promo.read`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/PromoCode"
+          }
+        ],
+        "security": [
+          {
+            "secretKey": []
+          }
+        ],
+        "x-required-scopes": [
+          "promo.read"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/PromoCode"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "active": {
+                          "type": "boolean",
+                          "description": "Issued (or shared), not used, not expired, the pool is active."
+                        },
+                        "uses": {
+                          "type": "integer"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationError"
+          }
+        }
+      }
+    },
+    "/promo/profiles/{type}/{value}/codes": {
+      "get": {
+        "operationId": "promo.profiles.codes",
+        "summary": "Codes of a profile",
+        "tags": [
+          "promo"
+        ],
+        "description": "Codes issued to the profile, newest first (up to 100) — for the customer account of a store.\n\nRequires key permission(s): `promo.read`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdentityType"
+          },
+          {
+            "$ref": "#/components/parameters/IdentityValue"
+          }
+        ],
+        "security": [
+          {
+            "secretKey": []
+          }
+        ],
+        "x-required-scopes": [
+          "promo.read"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "allOf": [
+                          {
+                            "$ref": "#/components/schemas/PromoCode"
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "active": {
+                                "type": "boolean"
+                              }
+                            }
+                          }
+                        ]
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationError"
+          }
+        }
+      }
     }
   },
   "components": {
@@ -5911,6 +6504,26 @@
           "type": "string"
         },
         "description": "Redemption id from the hold response."
+      },
+      "PromoPoolKey": {
+        "name": "key",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "string",
+          "pattern": "^[a-z0-9_]{1,64}$"
+        },
+        "description": "Pool key — the name used in templates: `{{ promo_code('summer') }}`."
+      },
+      "PromoCode": {
+        "name": "code",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "string",
+          "maxLength": 64
+        },
+        "description": "Promo code, case-insensitive."
       }
     },
     "responses": {
@@ -8609,6 +9222,35 @@
               "null"
             ],
             "format": "date-time"
+          },
+          "referral_code": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Code of the member for inviting friends."
+          },
+          "referral_url": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Referral link (`?ref=` on the store page) when referrals are on."
+          },
+          "referrals": {
+            "type": "object",
+            "properties": {
+              "invited": {
+                "type": "integer"
+              },
+              "rewarded": {
+                "type": "integer"
+              },
+              "points": {
+                "type": "integer"
+              }
+            },
+            "description": "Friends who came with the code, of them rewarded, and points for them."
           }
         }
       },
@@ -8734,6 +9376,197 @@
           "created_at": {
             "type": "string",
             "format": "date-time"
+          },
+          "referral": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "friend",
+              "referrer",
+              null
+            ],
+            "description": "Referral reward: `friend` — for joining by invitation, `referrer` — for the first order of a friend."
+          }
+        }
+      },
+      "PromoPool": {
+        "type": "object",
+        "required": [
+          "key",
+          "name",
+          "type",
+          "status",
+          "active",
+          "per_profile",
+          "stats"
+        ],
+        "properties": {
+          "key": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "shared",
+              "unique"
+            ],
+            "description": "`shared` — one code for everyone; `unique` — a separate code for every profile."
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "active",
+              "paused"
+            ]
+          },
+          "active": {
+            "type": "boolean",
+            "description": "Active now: not paused and within the promotion period."
+          },
+          "discount": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Discount text for messages, e.g. «−10 %». The discount itself is a coupon rule of the store."
+          },
+          "starts_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "ends_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "End of the promotion (exclusive)."
+          },
+          "validity_days": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "description": "A code is valid for this many days after it is issued (not longer than the promotion)."
+          },
+          "per_profile": {
+            "type": "integer",
+            "description": "How many codes of the pool one profile can receive."
+          },
+          "stats": {
+            "type": "object",
+            "properties": {
+              "total": {
+                "type": "integer"
+              },
+              "available": {
+                "type": "integer"
+              },
+              "issued": {
+                "type": "integer"
+              },
+              "used": {
+                "type": "integer"
+              },
+              "uses": {
+                "type": "integer"
+              },
+              "revenue": {
+                "type": "number",
+                "description": "Sum of the orders with codes of the pool."
+              }
+            }
+          }
+        }
+      },
+      "PromoCode": {
+        "type": "object",
+        "required": [
+          "code",
+          "status"
+        ],
+        "properties": {
+          "pool": {
+            "type": "string",
+            "description": "Pool key."
+          },
+          "code": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "available",
+              "issued",
+              "used",
+              "shared"
+            ]
+          },
+          "issued_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "expires_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "used_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          }
+        }
+      },
+      "LoyaltyReferral": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "rewarded",
+              "expired",
+              "limit",
+              "cancelled"
+            ],
+            "description": "`pending` — waiting for the friend's first order."
+          },
+          "code": {
+            "type": "string"
+          },
+          "friend_points": {
+            "type": "integer"
+          },
+          "friend_promo_code": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "rewarded": {
+            "type": "boolean",
+            "description": "The friend has received the reward."
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "The first order of the friend rewards the member until this moment."
           }
         }
       }

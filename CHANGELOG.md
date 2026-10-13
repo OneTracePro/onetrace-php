@@ -2,6 +2,11 @@
 
 All notable changes are documented here. The project follows [Semantic Versioning](https://semver.org/).
 
+## 1.7.0 — 2026-10-13
+
+- `promo()`: promo code pools — `pools()`, `pool()`, `codes()` / `iterateCodes()` (new and changed codes after a cursor, for store coupons), `check()`, `profileCodes()`, `generate()`, `import()`, `issue()` to a profile.
+- `loyalty()->refer()`: a friend's referral code on registration; the account has `referral_code`, `referral_url` and `referrals`.
+
 ## 1.6.0 — 2026-10-12
 
 - `loyalty()`: the loyalty program — `calculate()` points for a cart, `hold()` / `confirm()` / `cancel()` points at checkout, `account()` and `transactions()` of a member, `join()`, `adjust()` with a reason.

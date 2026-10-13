@@ -218,6 +218,31 @@ $onetrace->loyalty()->adjust($customer, 500, 'Compensation for a late delivery')
 
 A hold that is not confirmed returns to the balance in 30 minutes; refunds and cancellations of the order (`order_refunded` / `order_cancelled`) return the redeemed points automatically. Also: `transactions()` / `iterateTransactions()`, `join()` for programs with explicit enrollment.
 
+Referrals: every member has a code and a link (`referral_code`, `referral_url` of the account). The tracker keeps the code of a `?ref=` link in the `cdp_ref` cookie; pass it on registration:
+
+```php
+$onetrace->loyalty()->refer(Identity::userId('42'), $_COOKIE['cdp_ref']); // friend reward at once; 422 for own code or an existing customer
+```
+
+## Promo codes
+
+Pools of promo codes: a shared code or unique codes issued to profiles in messages, journeys and through the API. The store applies the discount with its own coupon rule. Needs `promo.read` (pools, codes, checks) or `promo.write` (generate, upload, issue).
+
+```php
+// A store plugin: create coupons for new and changed codes of a pool, keep the cursor
+$codes = $onetrace->promo()->iterateCodes('welcome', $savedCursor);
+foreach ($codes as $code) {
+    // create or update the coupon $code['code'] (status, expires_at)
+}
+$savedCursor = $codes->getReturn();
+
+$code = $onetrace->promo()->issue('welcome', Identity::email('anna@example.com')); // the same code until it is used
+$onetrace->promo()->check('WEL7KQ2XM');                                            // pool, status, active, uses
+$onetrace->promo()->generate('welcome', 5000);                                     // or import('welcome', ['SHOP-1', …])
+```
+
+Use of a code is counted from the `coupon` property of the purchase event (`Order` of the Commerce module), cancellations free it.
+
 ## Message templates
 
 Templates have language versions: `content` in the main `language`, other languages in `translations`. Each recipient gets the version for the `language` trait of their profile, otherwise the main one.

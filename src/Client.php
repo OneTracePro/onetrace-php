@@ -15,6 +15,7 @@ use OneTrace\Resource\Events;
 use OneTrace\Resource\Journeys;
 use OneTrace\Resource\Loyalty;
 use OneTrace\Resource\Products;
+use OneTrace\Resource\Promo;
 use OneTrace\Resource\Profiles;
 use OneTrace\Resource\Push;
 use OneTrace\Resource\Recommendations;
@@ -41,7 +42,7 @@ use Psr\Http\Message\StreamFactoryInterface;
  */
 final class Client
 {
-    public const VERSION = '1.6.0';
+    public const VERSION = '1.7.0';
 
     /**
      * API operations (operationId of the OpenAPI specification) and the methods that call them.
@@ -119,6 +120,14 @@ final class Client
         'loyalty.redemptions.confirm' => 'loyalty.confirm',
         'loyalty.redemptions.cancel' => 'loyalty.cancel',
         'loyalty.adjustments.store' => 'loyalty.adjust',
+        'loyalty.referrals.store' => 'loyalty.refer',
+        'promo.pools.index' => 'promo.pools',
+        'promo.pools.show' => 'promo.pool',
+        'promo.codes.index' => 'promo.codes',
+        'promo.codes.store' => 'promo.generate',
+        'promo.codes.issue' => 'promo.issue',
+        'promo.codes.show' => 'promo.check',
+        'promo.profiles.codes' => 'promo.profileCodes',
         'campaigns.index' => 'campaigns.list',
         'campaigns.store' => 'campaigns.create',
         'campaigns.show' => 'campaigns.get',
@@ -308,6 +317,14 @@ final class Client
     public function loyalty(): Loyalty
     {
         return $this->resource(Loyalty::class);
+    }
+
+    /**
+     * Promo code pools: codes for store coupons, issuing codes to profiles, checking codes.
+     */
+    public function promo(): Promo
+    {
+        return $this->resource(Promo::class);
     }
 
     /**
