@@ -6380,6 +6380,167 @@
           }
         }
       }
+    },
+    "/messages": {
+      "post": {
+        "operationId": "messages.send",
+        "summary": "Send one message now",
+        "tags": [
+          "messages"
+        ],
+        "description": "Sends one message to one profile right away — an order confirmation, a password reset, a one-time code. The recipient profile is found by identity or created. Repeat the request with the same `Idempotency-Key` to retry safely: no second message is sent. No more than `MESSAGES_API_PER_RECIPIENT_PER_HOUR` (20 by default) messages per recipient per hour through the API. Poll `GET /messages/{message}` for the delivery status. With `steps`, the message goes as a cascade — poll `GET /messages/cascades/{cascade}`; the per-recipient limit counts a cascade once; without the `cascades` plan feature the answer is `402`.\n\nRequires key permission(s): `messages.send`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MessageSendInput"
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "secretKey": []
+          }
+        ],
+        "x-required-scopes": [
+          "messages.send"
+        ],
+        "responses": {
+          "202": {
+            "description": "Queued: a message, or a cascade when `steps` are given",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/MessageStatus"
+                    },
+                    {
+                      "$ref": "#/components/schemas/CascadeStatus"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "402": {
+            "$ref": "#/components/responses/Error"
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/messages/cascades/{cascade}": {
+      "get": {
+        "operationId": "messages.cascade",
+        "summary": "Get the state of a cascade",
+        "tags": [
+          "messages"
+        ],
+        "description": "Status of a cascade sent with `POST /messages` and the messages of its steps.\n\nRequires key permission(s): `messages.send`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/CascadeId"
+          }
+        ],
+        "security": [
+          {
+            "secretKey": []
+          }
+        ],
+        "x-required-scopes": [
+          "messages.send"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CascadeStatus"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/messages/{message}": {
+      "get": {
+        "operationId": "messages.show",
+        "summary": "Get the status of a message",
+        "tags": [
+          "messages"
+        ],
+        "description": "Status and timestamps of a message sent with `POST /messages` (or any message of the project by its id).\n\nRequires key permission(s): `messages.send`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/MessageId"
+          }
+        ],
+        "security": [
+          {
+            "secretKey": []
+          }
+        ],
+        "x-required-scopes": [
+          "messages.send"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageStatus"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
     }
   },
   "components": {
@@ -6524,6 +6685,26 @@
           "maxLength": 64
         },
         "description": "Promo code, case-insensitive."
+      },
+      "MessageId": {
+        "name": "message",
+        "in": "path",
+        "required": true,
+        "description": "Message `id` (UUID) from the send response.",
+        "schema": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "CascadeId": {
+        "name": "cascade",
+        "in": "path",
+        "required": true,
+        "description": "Cascade `id` (UUID) from the send response.",
+        "schema": {
+          "type": "string",
+          "format": "uuid"
+        }
       }
     },
     "responses": {
@@ -9567,6 +9748,264 @@
             "type": "string",
             "format": "date-time",
             "description": "The first order of the friend rewards the member until this moment."
+          }
+        }
+      },
+      "MessageSendInput": {
+        "type": "object",
+        "required": [
+          "identity"
+        ],
+        "properties": {
+          "identity": {
+            "$ref": "#/components/schemas/IdentityRef",
+            "description": "The recipient. A profile with this identity is created if there is none."
+          },
+          "traits": {
+            "type": "object",
+            "maxProperties": 100,
+            "description": "Traits written to the profile before sending, available in the template as `traits.*`."
+          },
+          "template_id": {
+            "type": "integer",
+            "description": "Message template. A transactional template skips consents, frequency limits and quiet hours, but not hard blocks of the channel (address does not exist, bot blocked); other templates follow all messaging rules."
+          },
+          "integration_id": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "description": "Channel integration of the template's channel; may be omitted when the channel has exactly one active integration."
+          },
+          "data": {
+            "type": "object",
+            "description": "Per-message data, available in the template as `context.data.*` (order number, confirmation code)."
+          },
+          "steps": {
+            "type": "array",
+            "minItems": 2,
+            "maxItems": 5,
+            "items": {
+              "$ref": "#/components/schemas/CascadeStep"
+            },
+            "description": "Cascade (plans with the `cascades` feature): channels tried in order — the next one when the profile cannot be reached on the previous, or its message was not sent, not delivered or not read within the step time."
+          }
+        },
+        "description": "Pass `template_id` (and `integration_id` if needed) for one message, or `steps` for a cascade — not both."
+      },
+      "MessageStatus": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "queued",
+              "scheduled",
+              "sent",
+              "delivered",
+              "failed",
+              "skipped",
+              "bounced"
+            ],
+            "description": "`queued` → `sent` → `delivered`; `scheduled` — waiting (quiet hours, warm-up); `skipped` — not sent, see `reason`; `failed`/`bounced` — see `reason` and `error`."
+          },
+          "reason": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Why it was skipped or failed: `no_recipient`, `unsubscribed`, `recipient_blocked`, `suppressed`, `frequency_limit`, `quota_exceeded`, `feature_unavailable`, `delivery_failed`, `recipient_unreachable`, `undelivered`, `template_error`, `integration_unavailable` …"
+          },
+          "error": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "channel": {
+            "type": "string"
+          },
+          "template_id": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "integration_id": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "profile_id": {
+            "type": "integer"
+          },
+          "transactional": {
+            "type": "boolean"
+          },
+          "origin": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "`api` for messages sent with this operation."
+          },
+          "created_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "scheduled_for": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "sent_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "delivered_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "opened_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "clicked_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "failed_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          }
+        }
+      },
+      "CascadeStep": {
+        "type": "object",
+        "required": [
+          "integration_id",
+          "template_id"
+        ],
+        "properties": {
+          "integration_id": {
+            "type": "integer"
+          },
+          "template_id": {
+            "type": "integer",
+            "description": "Template of the integration's channel."
+          },
+          "wait_for": {
+            "type": "string",
+            "enum": [
+              "sent",
+              "delivered",
+              "opened"
+            ],
+            "default": "sent",
+            "description": "What counts as success. `delivered` needs an integration that reports delivery (not email through own SMTP), `opened` — a channel that reports reading (email, WhatsApp, Viber)."
+          },
+          "timeout": {
+            "type": "object",
+            "description": "How long to wait for `delivered` or `opened` after sending; 15 minutes by default.",
+            "properties": {
+              "amount": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 3650
+              },
+              "unit": {
+                "type": "string",
+                "enum": [
+                  "minute",
+                  "hour",
+                  "day",
+                  "week"
+                ]
+              }
+            }
+          }
+        }
+      },
+      "CascadeStatus": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "running",
+              "reached",
+              "failed"
+            ],
+            "description": "`reached` — a step succeeded; `failed` — no channel reached the profile."
+          },
+          "step": {
+            "type": "integer",
+            "description": "Current step, from 0."
+          },
+          "reached_channel": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "profile_id": {
+            "type": "integer"
+          },
+          "origin": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "created_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "finished_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "messages": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MessageStatus"
+            },
+            "description": "Messages of the steps tried so far."
           }
         }
       }

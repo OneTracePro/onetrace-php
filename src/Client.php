@@ -14,6 +14,7 @@ use OneTrace\Resource\Catalog;
 use OneTrace\Resource\Events;
 use OneTrace\Resource\Journeys;
 use OneTrace\Resource\Loyalty;
+use OneTrace\Resource\Messages;
 use OneTrace\Resource\Products;
 use OneTrace\Resource\Promo;
 use OneTrace\Resource\Profiles;
@@ -42,7 +43,7 @@ use Psr\Http\Message\StreamFactoryInterface;
  */
 final class Client
 {
-    public const VERSION = '1.7.0';
+    public const VERSION = '1.8.0';
 
     /**
      * API operations (operationId of the OpenAPI specification) and the methods that call them.
@@ -138,6 +139,9 @@ final class Client
         'campaigns.pause' => 'campaigns.pause',
         'campaigns.resume' => 'campaigns.resume',
         'campaigns.cancel' => 'campaigns.cancel',
+        'messages.send' => 'messages.send',
+        'messages.show' => 'messages.get',
+        'messages.cascade' => 'messages.cascade',
         'templates.index' => 'templates.list',
         'templates.store' => 'templates.create',
         'templates.show' => 'templates.get',
@@ -325,6 +329,14 @@ final class Client
     public function promo(): Promo
     {
         return $this->resource(Promo::class);
+    }
+
+    /**
+     * Transactional messages and cascades of channels to a profile.
+     */
+    public function messages(): Messages
+    {
+        return $this->resource(Messages::class);
     }
 
     /**

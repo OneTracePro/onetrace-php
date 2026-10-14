@@ -4,7 +4,7 @@
 [![Packagist](https://img.shields.io/packagist/v/onetracepro/onetrace-php.svg)](https://packagist.org/packages/onetracepro/onetrace-php)
 [![License](https://img.shields.io/packagist/l/onetracepro/onetrace-php.svg)](LICENSE)
 
-Server-side integration with [OneTrace.pro](https://onetrace.pro), the customer data platform: send events and orders, update profiles and consents, sync the product catalog, get recommendations, manage segments, journeys and campaigns — the whole public API v1, without writing HTTP requests by hand.
+Server-side integration with [OneTrace.pro](https://onetrace.pro), the customer data platform: send events and orders, update profiles and consents, sync the product catalog, get recommendations, manage segments, journeys and campaigns, send transactional messages — the whole public API v1, without writing HTTP requests by hand.
 
 - PHP 7.4–8.5, no required dependencies besides `ext-curl` and `ext-json`; any PSR-18 client can be used instead of cURL.
 - Safe retries: network errors, `429` and `5xx` are retried with backoff; events are deduplicated by `messageId`, creating and launching resources carries an `Idempotency-Key`.
@@ -242,6 +242,27 @@ $onetrace->promo()->generate('welcome', 5000);                                  
 ```
 
 Use of a code is counted from the `coupon` property of the purchase event (`Order` of the Commerce module), cancellations free it.
+
+## Transactional messages
+
+One message to a profile from a template — an order confirmation, a one-time code — or a cascade of channels tried in order. The profile is found by the identity or created. Needs a secret key with `messages.send`.
+
+```php
+$message = $onetrace->messages()->send(Identity::email('anna@example.com'), 12, [
+    'traits' => ['first_name' => 'Anna'],    // written to the profile, {{ traits.first_name }}
+    'data' => ['order_id' => 'A-1001'],      // only for this message, {{ context.data.order_id }}
+], 'order-A-1001');                          // the same key returns the same message
+$onetrace->messages()->get($message['id']); // status: queued, sent, delivered, failed, skipped …
+
+// A cascade (plans with cascades): WhatsApp, and email if it is not delivered in 2 minutes
+$cascade = $onetrace->messages()->sendCascade(Identity::phone('+4915112345678'), [
+    ['integration_id' => 3, 'template_id' => 21, 'wait_for' => 'delivered', 'timeout' => ['amount' => 2, 'unit' => 'minute']],
+    ['integration_id' => 4, 'template_id' => 22],
+], ['data' => ['code' => '482913']]);
+$onetrace->messages()->cascade($cascade['id']); // running, reached (reached_channel) or failed
+```
+
+A transactional template skips consents, frequency limits and quiet hours, but not hard blocks of the channel (the address does not exist, the bot is blocked); other templates follow all messaging rules. `integration_id` is needed when the template's channel has several active integrations. Each recipient gets at most 20 messages an hour through the API (429 with `Retry-After`).
 
 ## Message templates
 

@@ -2,6 +2,10 @@
 
 All notable changes are documented here. The project follows [Semantic Versioning](https://semver.org/).
 
+## 1.8.0 — 2026-10-14
+
+- `messages()`: transactional messages — `send()` from a template to a profile (found by the identity or created) with traits and per-message data, `sendCascade()` through channels in order (next one when the message is not sent, delivered or read in time), `get()` and `cascade()` for the status.
+
 ## 1.7.0 — 2026-10-13
 
 - `promo()`: promo code pools — `pools()`, `pool()`, `codes()` / `iterateCodes()` (new and changed codes after a cursor, for store coupons), `check()`, `profileCodes()`, `generate()`, `import()`, `issue()` to a profile.
