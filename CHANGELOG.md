@@ -2,6 +2,11 @@
 
 All notable changes are documented here. The project follows [Semantic Versioning](https://semver.org/).
 
+## 1.9.0 — 2026-10-15
+
+- `chats()`: online chat conversations — `conversations()` / `iterateConversations()` with status, channel and customer filters, `conversation()` with the latest messages, `reply()` as the API key, `close()`.
+- The operation test skips operations marked `x-internal` in the specification (the website chat widget of the tracker).
+
 ## 1.8.0 — 2026-10-14
 
 - `messages()`: transactional messages — `send()` from a template to a profile (found by the identity or created) with traits and per-message data, `sendCascade()` through channels in order (next one when the message is not sent, delivered or read in time), `get()` and `cascade()` for the status.

@@ -122,6 +122,10 @@ final class OperationsTest extends TestCase
             'messages.send' => static function (Client $c) use ($identity) { return $c->messages()->send($identity, 12, ['data' => ['order_id' => 'A-1001']]); },
             'messages.show' => static function (Client $c) { return $c->messages()->get('0199c0de-0000-7000-8000-000000000001'); },
             'messages.cascade' => static function (Client $c) { return $c->messages()->cascade('0199c0de-0000-7000-8000-000000000002'); },
+            'conversations.index' => static function (Client $c) use ($identity) { return $c->chats()->conversations(['status' => 'open', 'profile' => $identity]); },
+            'conversations.show' => static function (Client $c) { return $c->chats()->conversation('0199c0de-0000-7000-8000-000000000003', 50); },
+            'conversations.messages.store' => static function (Client $c) { return $c->chats()->reply('0199c0de-0000-7000-8000-000000000003', 'Your order ships today.'); },
+            'conversations.close' => static function (Client $c) { return $c->chats()->close('0199c0de-0000-7000-8000-000000000003'); },
             'templates.index' => static function (Client $c) { return $c->templates()->list(); },
             'templates.store' => static function (Client $c) { return $c->templates()->create(['name' => 'Welcome', 'channel_key' => 'email', 'content' => []]); },
             'templates.show' => static function (Client $c) { return $c->templates()->get(3); },
@@ -139,7 +143,8 @@ final class OperationsTest extends TestCase
 
         foreach (self::spec()['paths'] as $path => $methods) {
             foreach ($methods as $method => $operation) {
-                if (!\is_array($operation) || !isset($operation['operationId'])) {
+                // x-internal: operations of the tracker in the browser (the website chat widget), not of the library.
+                if (!\is_array($operation) || !isset($operation['operationId']) || ($operation['x-internal'] ?? false) === true) {
                     continue;
                 }
 

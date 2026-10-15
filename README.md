@@ -264,6 +264,24 @@ $onetrace->messages()->cascade($cascade['id']); // running, reached (reached_cha
 
 A transactional template skips consents, frequency limits and quiet hours, but not hard blocks of the channel (the address does not exist, the bot is blocked); other templates follow all messaging rules. `integration_id` is needed when the template's channel has several active integrations. Each recipient gets at most 20 messages an hour through the API (429 with `Retry-After`).
 
+## Chat conversations
+
+Conversations of the online chat (website and messengers) for bots and external helpdesk systems. Reading needs a secret key with `chats.read`, answers and closing — `chats.reply`.
+
+```php
+// Conversations waiting for an answer; a customer's conversations — 'profile' => Identity::email(…)
+foreach ($onetrace->chats()->iterateConversations(['status' => 'open', 'channel' => 'web']) as $conversation) {
+    $full = $onetrace->chats()->conversation($conversation['id']); // with the latest messages, oldest first
+    $last = end($full['messages']);                                  // author: visitor, operator, system
+
+    $onetrace->chats()->reply($conversation['id'], 'Your order ships today.', 'answer-' . $last['id']);
+}
+
+$onetrace->chats()->close($conversation['id']); // the website visitor is asked to rate the conversation
+```
+
+An answer through the API takes no operator seat: the operator inbox signs it with the name of the key (`via: api`, `api_key`), and the customer gets it in the website widget or in the messenger of the conversation. WhatsApp allows free text only within 24 hours of the customer's last message (`ValidationException` otherwise). A repeated idempotency key does not answer twice.
+
 ## Message templates
 
 Templates have language versions: `content` in the main `language`, other languages in `translations`. Each recipient gets the version for the `language` trait of their profile, otherwise the main one.

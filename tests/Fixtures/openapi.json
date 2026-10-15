@@ -3881,6 +3881,470 @@
         }
       }
     },
+    "/chat/config": {
+      "get": {
+        "operationId": "chat.config",
+        "summary": "Website chat widget settings",
+        "description": "Used by the tracker: whether the chat is enabled, online state (working hours and operators online), color, position, pre-chat form and texts in the visitor language.\n\nUsed by the website chat widget of the tracker; not part of the SDKs. To read and answer conversations from a server, use `/conversations`.",
+        "tags": [
+          "chat"
+        ],
+        "security": [
+          {
+            "writeKey": []
+          },
+          {
+            "secretKey": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "language",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 35
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Settings; only enabled: false when the chat is off",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "enabled": {
+                      "type": "boolean"
+                    },
+                    "online": {
+                      "type": "boolean"
+                    },
+                    "color": {
+                      "type": "string"
+                    },
+                    "position": {
+                      "type": "string",
+                      "enum": [
+                        "right",
+                        "left"
+                      ]
+                    },
+                    "prechat": {
+                      "type": "boolean"
+                    },
+                    "texts": {
+                      "type": "object",
+                      "properties": {
+                        "title": {
+                          "type": "string"
+                        },
+                        "greeting": {
+                          "type": "string"
+                        },
+                        "offline": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x-internal": true
+      }
+    },
+    "/chat/messages": {
+      "post": {
+        "operationId": "chat.send",
+        "summary": "Send a visitor message",
+        "description": "Finds the visitor profile by userId or anonymousId (creates it if needed) and adds the message to its open website conversation or starts a new one.\n\nUsed by the website chat widget of the tracker; not part of the SDKs. To read and answer conversations from a server, use `/conversations`.",
+        "tags": [
+          "chat"
+        ],
+        "security": [
+          {
+            "writeKey": []
+          },
+          {
+            "secretKey": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "anonymousId",
+                  "body"
+                ],
+                "properties": {
+                  "anonymousId": {
+                    "type": "string",
+                    "maxLength": 255
+                  },
+                  "userId": {
+                    "type": "string",
+                    "maxLength": 255
+                  },
+                  "conversation": {
+                    "type": "string",
+                    "format": "uuid",
+                    "description": "Conversation id from POST /chat/messages"
+                  },
+                  "token": {
+                    "type": "string",
+                    "maxLength": 64,
+                    "description": "Visitor token of the conversation from POST /chat/messages"
+                  },
+                  "body": {
+                    "type": "string",
+                    "maxLength": 4000
+                  },
+                  "name": {
+                    "type": "string",
+                    "maxLength": 100
+                  },
+                  "email": {
+                    "type": "string",
+                    "format": "email",
+                    "maxLength": 255
+                  },
+                  "page": {
+                    "type": "string",
+                    "maxLength": 2000,
+                    "description": "Page URL (http/https)"
+                  },
+                  "language": {
+                    "type": "string",
+                    "maxLength": 35
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Message stored",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "conversation": {
+                      "$ref": "#/components/schemas/ChatVisitorConversation"
+                    },
+                    "message": {
+                      "$ref": "#/components/schemas/ChatVisitorMessage"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The website chat is turned off"
+          },
+          "429": {
+            "description": "Too many messages from the visitor"
+          }
+        },
+        "x-internal": true
+      },
+      "get": {
+        "operationId": "chat.messages",
+        "summary": "Messages of the visitor conversation",
+        "tags": [
+          "chat"
+        ],
+        "security": [
+          {
+            "writeKey": []
+          },
+          {
+            "secretKey": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "conversation",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Conversation id from POST /chat/messages"
+            }
+          },
+          {
+            "name": "token",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "maxLength": 64,
+              "description": "Visitor token of the conversation from POST /chat/messages"
+            }
+          },
+          {
+            "name": "after",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          {
+            "name": "read",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": true
+            },
+            "description": "Mark operator replies as read by the visitor"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Messages visible to the visitor",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "conversation": {
+                      "$ref": "#/components/schemas/ChatVisitorConversation"
+                    },
+                    "messages": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/ChatVisitorMessage"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Unknown conversation or wrong token"
+          }
+        },
+        "x-internal": true,
+        "description": "Used by the website chat widget of the tracker; not part of the SDKs. To read and answer conversations from a server, use `/conversations`."
+      }
+    },
+    "/chat/typing": {
+      "post": {
+        "operationId": "chat.typing",
+        "summary": "The visitor is typing",
+        "tags": [
+          "chat"
+        ],
+        "security": [
+          {
+            "writeKey": []
+          },
+          {
+            "secretKey": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "conversation",
+                  "token"
+                ],
+                "properties": {
+                  "conversation": {
+                    "type": "string",
+                    "format": "uuid",
+                    "description": "Conversation id from POST /chat/messages"
+                  },
+                  "token": {
+                    "type": "string",
+                    "maxLength": 64,
+                    "description": "Visitor token of the conversation from POST /chat/messages"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Shown to operators of the open conversation"
+          },
+          "404": {
+            "description": "Unknown conversation or wrong token"
+          }
+        },
+        "x-internal": true,
+        "description": "Used by the website chat widget of the tracker; not part of the SDKs. To read and answer conversations from a server, use `/conversations`."
+      }
+    },
+    "/chat/rating": {
+      "post": {
+        "operationId": "chat.rate",
+        "summary": "Rate the conversation",
+        "tags": [
+          "chat"
+        ],
+        "security": [
+          {
+            "writeKey": []
+          },
+          {
+            "secretKey": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "conversation",
+                  "token",
+                  "rating"
+                ],
+                "properties": {
+                  "conversation": {
+                    "type": "string",
+                    "format": "uuid",
+                    "description": "Conversation id from POST /chat/messages"
+                  },
+                  "token": {
+                    "type": "string",
+                    "maxLength": 64,
+                    "description": "Visitor token of the conversation from POST /chat/messages"
+                  },
+                  "rating": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 5
+                  },
+                  "comment": {
+                    "type": "string",
+                    "maxLength": 1000
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Rating stored",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "conversation": {
+                      "$ref": "#/components/schemas/ChatVisitorConversation"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Unknown conversation or wrong token"
+          }
+        },
+        "x-internal": true,
+        "description": "Used by the website chat widget of the tracker; not part of the SDKs. To read and answer conversations from a server, use `/conversations`."
+      }
+    },
+    "/chat/realtime": {
+      "post": {
+        "operationId": "chat.realtime",
+        "summary": "Realtime tokens of the visitor conversation",
+        "description": "Centrifugo connection token (anonymous) and subscription token for the channel of this conversation only.\n\nUsed by the website chat widget of the tracker; not part of the SDKs. To read and answer conversations from a server, use `/conversations`.",
+        "tags": [
+          "chat"
+        ],
+        "security": [
+          {
+            "writeKey": []
+          },
+          {
+            "secretKey": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "conversation",
+                  "token"
+                ],
+                "properties": {
+                  "conversation": {
+                    "type": "string",
+                    "format": "uuid",
+                    "description": "Conversation id from POST /chat/messages"
+                  },
+                  "token": {
+                    "type": "string",
+                    "maxLength": 64,
+                    "description": "Visitor token of the conversation from POST /chat/messages"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Tokens",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "url": {
+                      "type": "string"
+                    },
+                    "channel": {
+                      "type": "string"
+                    },
+                    "connection_token": {
+                      "type": "string"
+                    },
+                    "subscription_token": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Unknown conversation or wrong token"
+          }
+        },
+        "x-internal": true
+      }
+    },
     "/search": {
       "get": {
         "operationId": "search.products",
@@ -6541,6 +7005,314 @@
           }
         }
       }
+    },
+    "/conversations": {
+      "get": {
+        "operationId": "conversations.index",
+        "summary": "List chat conversations",
+        "tags": [
+          "conversations"
+        ],
+        "description": "Conversations of the online chat (website and messengers), newest first. Filter by status, channel or customer.\n\nRequires key permission(s): `chats.read`.",
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "open",
+                "waiting",
+                "closed"
+              ]
+            },
+            "description": "`open` — waiting for an answer."
+          },
+          {
+            "name": "channel",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "web",
+                "telegram",
+                "whatsapp",
+                "viber"
+              ]
+            }
+          },
+          {
+            "name": "profile_type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "user_id",
+                "anonymous_id",
+                "email",
+                "phone",
+                "telegram_chat_id",
+                "viber_id",
+                "web_push"
+              ]
+            },
+            "description": "Identity type of the customer; together with `profile_value`."
+          },
+          {
+            "name": "profile_value",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 255
+            },
+            "description": "Identity value of the customer; together with `profile_type`."
+          },
+          {
+            "$ref": "#/components/parameters/Limit"
+          },
+          {
+            "$ref": "#/components/parameters/Cursor"
+          }
+        ],
+        "security": [
+          {
+            "secretKey": []
+          }
+        ],
+        "x-required-scopes": [
+          "chats.read"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "data",
+                    "next_cursor"
+                  ],
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Conversation"
+                      }
+                    },
+                    "next_cursor": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "description": "Pass as `cursor` to get the next page; null on the last page."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationError"
+          }
+        }
+      }
+    },
+    "/conversations/{conversation}": {
+      "get": {
+        "operationId": "conversations.show",
+        "summary": "Get a conversation with messages",
+        "tags": [
+          "conversations"
+        ],
+        "description": "The conversation and its latest messages, oldest first.\n\nRequires key permission(s): `chats.read`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/ConversationId"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500,
+              "default": 100
+            },
+            "description": "How many latest messages to return."
+          }
+        ],
+        "security": [
+          {
+            "secretKey": []
+          }
+        ],
+        "x-required-scopes": [
+          "chats.read"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConversationDetail"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationError"
+          }
+        }
+      }
+    },
+    "/conversations/{conversation}/messages": {
+      "post": {
+        "operationId": "conversations.messages.store",
+        "summary": "Answer in a conversation",
+        "tags": [
+          "conversations"
+        ],
+        "description": "Sends an answer to the customer as the API key: a bot or an external helpdesk. It does not take an operator seat and is signed with the key name in the operator inbox. The website visitor sees it in the chat widget; a messenger answer goes through the messenger integration (WhatsApp allows free text only within 24 hours of the customer's last message). An answer to a closed conversation reopens it unless the customer already has a newer one.\n\nRequires key permission(s): `chats.reply`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/ConversationId"
+          },
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "body"
+                ],
+                "properties": {
+                  "body": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 4000,
+                    "description": "Plain text of the answer."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "secretKey": []
+          }
+        ],
+        "x-required-scopes": [
+          "chats.reply"
+        ],
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConversationMessage"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationError"
+          }
+        }
+      }
+    },
+    "/conversations/{conversation}/close": {
+      "post": {
+        "operationId": "conversations.close",
+        "summary": "Close a conversation",
+        "tags": [
+          "conversations"
+        ],
+        "description": "Closes the conversation; the website visitor is asked to rate it. Closing a closed conversation changes nothing.\n\nRequires key permission(s): `chats.reply`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/ConversationId"
+          }
+        ],
+        "security": [
+          {
+            "secretKey": []
+          }
+        ],
+        "x-required-scopes": [
+          "chats.reply"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Conversation"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
     }
   },
   "components": {
@@ -6701,6 +7473,16 @@
         "in": "path",
         "required": true,
         "description": "Cascade `id` (UUID) from the send response.",
+        "schema": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "ConversationId": {
+        "name": "conversation",
+        "in": "path",
+        "required": true,
+        "description": "Conversation `id` (UUID).",
         "schema": {
           "type": "string",
           "format": "uuid"
@@ -10008,6 +10790,267 @@
             "description": "Messages of the steps tried so far."
           }
         }
+      },
+      "ChatVisitorMessage": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "author": {
+            "type": "string",
+            "enum": [
+              "visitor",
+              "operator",
+              "system"
+            ]
+          },
+          "body": {
+            "type": "string"
+          },
+          "operator": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "First name of the operator"
+          },
+          "action": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "closed — the conversation was closed"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "ChatVisitorConversation": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "open",
+              "waiting",
+              "closed"
+            ]
+          },
+          "rating": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "token": {
+            "type": "string",
+            "description": "Returned for a new conversation or when the request had no valid token; store it"
+          }
+        }
+      },
+      "Conversation": {
+        "type": "object",
+        "required": [
+          "id",
+          "profile_id",
+          "channel",
+          "status",
+          "assigned",
+          "unread_count",
+          "created_at"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "profile_id": {
+            "type": "integer"
+          },
+          "channel": {
+            "type": "string",
+            "enum": [
+              "web",
+              "telegram",
+              "whatsapp",
+              "viber"
+            ],
+            "description": "`web` — the website chat; messengers need the `chat_messengers` plan feature."
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "open",
+              "waiting",
+              "closed"
+            ],
+            "description": "`open` — the customer wrote last and waits for an answer; `waiting` — answered, waiting for the customer; `closed`."
+          },
+          "assigned": {
+            "type": "boolean",
+            "description": "An operator is responsible for the conversation."
+          },
+          "unread_count": {
+            "type": "integer",
+            "description": "Customer messages operators have not read yet."
+          },
+          "language": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "rating": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1,
+            "maximum": 5,
+            "description": "Customer rating after the conversation."
+          },
+          "rating_comment": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "last_message_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "last_message_author": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "visitor",
+              "operator",
+              "system",
+              null
+            ]
+          },
+          "first_reply_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "closed_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          }
+        }
+      },
+      "ConversationMessage": {
+        "type": "object",
+        "required": [
+          "id",
+          "author",
+          "body",
+          "created_at"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "author": {
+            "type": "string",
+            "enum": [
+              "visitor",
+              "operator",
+              "system"
+            ],
+            "description": "`visitor` — the customer; `operator` — an answer from the inbox or the API; `system` — assignment, closing and reopening (see `action`)."
+          },
+          "via": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "inbox",
+              "api",
+              null
+            ],
+            "description": "Where an answer or action came from: the operator inbox or the API."
+          },
+          "api_key": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Name of the API key that answered or closed the conversation."
+          },
+          "body": {
+            "type": "string"
+          },
+          "action": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "assigned",
+              "unassigned",
+              "closed",
+              "reopened",
+              null
+            ]
+          },
+          "status": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Delivery status of an answer sent to a messenger: queued, sent, delivered, failed, skipped, bounced."
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "ConversationDetail": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/Conversation"
+          },
+          {
+            "type": "object",
+            "required": [
+              "messages"
+            ],
+            "properties": {
+              "messages": {
+                "type": "array",
+                "description": "The latest messages, oldest first.",
+                "items": {
+                  "$ref": "#/components/schemas/ConversationMessage"
+                }
+              }
+            }
+          }
+        ]
       }
     }
   }

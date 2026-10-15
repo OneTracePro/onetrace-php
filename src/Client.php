@@ -11,6 +11,7 @@ use OneTrace\Http\Transport;
 use OneTrace\Resource\Analytics;
 use OneTrace\Resource\Campaigns;
 use OneTrace\Resource\Catalog;
+use OneTrace\Resource\Chats;
 use OneTrace\Resource\Events;
 use OneTrace\Resource\Journeys;
 use OneTrace\Resource\Loyalty;
@@ -43,7 +44,7 @@ use Psr\Http\Message\StreamFactoryInterface;
  */
 final class Client
 {
-    public const VERSION = '1.8.0';
+    public const VERSION = '1.9.0';
 
     /**
      * API operations (operationId of the OpenAPI specification) and the methods that call them.
@@ -142,6 +143,10 @@ final class Client
         'messages.send' => 'messages.send',
         'messages.show' => 'messages.get',
         'messages.cascade' => 'messages.cascade',
+        'conversations.index' => 'chats.conversations',
+        'conversations.show' => 'chats.conversation',
+        'conversations.messages.store' => 'chats.reply',
+        'conversations.close' => 'chats.close',
         'templates.index' => 'templates.list',
         'templates.store' => 'templates.create',
         'templates.show' => 'templates.get',
@@ -337,6 +342,14 @@ final class Client
     public function messages(): Messages
     {
         return $this->resource(Messages::class);
+    }
+
+    /**
+     * Online chat conversations: read them, answer customers as the API key, close them.
+     */
+    public function chats(): Chats
+    {
+        return $this->resource(Chats::class);
     }
 
     /**
