@@ -17,6 +17,8 @@ final class CatalogItem
      * @param string|int $id
      * @param array<string|int> $categoryIds the deepest category first
      * @param array<string, mixed> $params scalar attributes; empty, null and non-scalar values are skipped
+     * @param int|null $stock units in stock; the platform uses it only when stock levels are on in its catalog
+     *                        settings (then zero takes the product off sale); null when the shop does not track stock
      *
      * @return array<string, mixed>
      */
@@ -31,7 +33,8 @@ final class CatalogItem
         array $categoryIds = [],
         ?float $oldPrice = null,
         ?string $brand = null,
-        array $params = []
+        array $params = [],
+        ?int $stock = null
     ): array {
         $params = array_slice(array_filter($params, static function ($value): bool {
             return $value !== null && $value !== '' && is_scalar($value);
@@ -49,6 +52,7 @@ final class CatalogItem
             'category_ids' => $categoryIds !== [] ? array_slice(array_values(array_map('strval', $categoryIds)), 0, 10) : null,
             'brand' => $brand !== null && trim($brand) !== '' ? trim($brand) : null,
             'params' => $params !== [] ? $params : null,
+            'stock' => $stock !== null ? max(0, $stock) : null,
         ], static function ($value): bool {
             return $value !== null;
         });

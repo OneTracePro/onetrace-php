@@ -2,6 +2,11 @@
 
 All notable changes are documented here. The project follows [Semantic Versioning](https://semver.org/).
 
+## 1.10.0 — 2026-10-18
+
+- `CatalogItem::make()`: optional `$stock` (units in stock). The platform uses it only when stock levels are on in its catalog settings: then zero takes the product off sale and the "low stock" journey trigger works.
+- `Messages::product()`: wishlist events `add_to_wishlist` and `remove_from_wishlist` (without `quantity`) for price-drop and back-in-stock journeys; the e-commerce event contract lists them.
+
 ## 1.9.0 — 2026-10-15
 
 - `chats()`: online chat conversations — `conversations()` / `iterateConversations()` with status, channel and customer filters, `conversation()` with the latest messages, `reply()` as the API key, `close()`.

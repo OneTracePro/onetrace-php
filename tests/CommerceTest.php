@@ -128,7 +128,11 @@ final class CommerceTest extends TestCase
         self::assertArrayNotHasKey('quantity', $viewed['properties']);
         self::assertSame('https://shop.example.com/cart', $added['properties']['cart_url']);
 
-        foreach ([$viewed, $added, $messages->product('remove_from_cart', $customer, $line, 'EUR'), $checkout] as $message) {
+        $wished = $messages->product('add_to_wishlist', $customer, $line, 'EUR');
+        self::assertSame('add_to_wishlist', $wished['event']);
+        self::assertArrayNotHasKey('quantity', $wished['properties']);
+
+        foreach ([$viewed, $added, $messages->product('remove_from_cart', $customer, $line, 'EUR'), $checkout, $wished, $messages->product('remove_from_wishlist', $customer, $line, 'EUR')] as $message) {
             self::assertMatchesContract($message);
         }
 
@@ -154,6 +158,9 @@ final class CommerceTest extends TestCase
         self::assertCount(CatalogItem::MAX_PARAMS, $item['params']);
         self::assertSame('white', $item['params']['Color']);
         self::assertArrayNotHasKey('old_price', CatalogItem::make(1, 'X', null, null, 50.0, 'EUR', false, [], 40.0));
+        self::assertArrayNotHasKey('stock', $item);
+        self::assertSame(0, CatalogItem::make(1, 'X', null, null, 50.0, 'EUR', false, [], null, null, [], -3)['stock']);
+        self::assertSame(12, CatalogItem::make(1, 'X', null, null, 50.0, 'EUR', true, [], null, null, [], 12)['stock']);
         self::assertSame(['id' => '5', 'name' => 'Shoes'], CatalogItem::category(5, 'Shoes', 0));
         self::assertSame(['id' => '6', 'name' => 'Boots', 'parent_id' => '5'], CatalogItem::category(6, 'Boots', 5));
     }

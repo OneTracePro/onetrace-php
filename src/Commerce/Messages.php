@@ -19,6 +19,9 @@ namespace OneTrace\Commerce;
  */
 final class Messages
 {
+    /** Product events accepted by product(); wishlist events drive the catalog journeys of the platform. */
+    public const PRODUCT_EVENTS = ['product_viewed', 'add_to_cart', 'remove_from_cart', 'add_to_wishlist', 'remove_from_wishlist'];
+
     public const ORDER_COMPLETED = 'order_completed';
 
     public const ORDER_PAID = 'order_paid';
@@ -132,20 +135,20 @@ final class Messages
     }
 
     /**
-     * A product event from the server (when the plugin tracks the cart on the backend): product_viewed,
-     * add_to_cart or remove_from_cart.
+     * A product event from the server (when the plugin tracks the cart or the wishlist on the backend):
+     * product_viewed, add_to_cart, remove_from_cart, add_to_wishlist or remove_from_wishlist.
      *
      * @return array<string, mixed>
      */
     public function product(string $event, Customer $customer, LineItem $line, string $currency, ?string $cartUrl = null): array
     {
-        if (!in_array($event, ['product_viewed', 'add_to_cart', 'remove_from_cart'], true)) {
+        if (!in_array($event, self::PRODUCT_EVENTS, true)) {
             throw new \InvalidArgumentException(sprintf('"%s" is not a product event.', $event));
         }
 
         $properties = $line->toArray() + ['currency' => strtoupper($currency)];
 
-        if ($event === 'product_viewed') {
+        if (in_array($event, ['product_viewed', 'add_to_wishlist', 'remove_from_wishlist'], true)) {
             unset($properties['quantity']);
         }
 

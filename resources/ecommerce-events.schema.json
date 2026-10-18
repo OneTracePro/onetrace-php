@@ -82,7 +82,7 @@
       "required": ["type", "event", "properties"],
       "properties": {
         "type": { "const": "track" },
-        "event": { "enum": ["product_viewed", "add_to_cart", "remove_from_cart"] },
+        "event": { "enum": ["product_viewed", "add_to_cart", "remove_from_cart", "add_to_wishlist", "remove_from_wishlist"] },
         "properties": {
           "type": "object",
           "required": ["product_id", "product_name", "price", "currency"],

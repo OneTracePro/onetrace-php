@@ -136,7 +136,7 @@ Translations for other languages of the store go with the product and the catego
 ```php
 use OneTrace\Commerce\CatalogItem;
 
-$item = CatalogItem::make('SKU-1', 'Кроссовки', 'https://shop.example/sku-1', null, 4990, 'EUR', true, ['shoes']);
+$item = CatalogItem::make('SKU-1', 'Кроссовки', 'https://shop.example/sku-1', null, 4990, 'EUR', true, ['shoes'], null, null, [], 12); // 12 in stock
 $item = CatalogItem::translate($item, 'en', 'Sneakers', 'https://shop.example/en/sku-1');
 $category = CatalogItem::translateCategory(CatalogItem::category('shoes', 'Обувь'), 'en', 'Shoes');
 $onetrace->products()->upsert([$item], [$category]);
@@ -319,7 +319,7 @@ $onetrace->products()->upsert([CatalogItem::make('SKU-1', 'Sneakers', $url, $ima
 ```
 
 - `Customer` keeps only valid values: the phone in E.164, the country as ISO 3166-1, the language as a BCP 47 tag.
-- `orderPaid()`, `orderCancelled()` and `orderRefunded()` follow order status changes; `product()` and `checkoutStarted()` send cart events from the backend.
+- `orderPaid()`, `orderCancelled()` and `orderRefunded()` follow order status changes; `product()` and `checkoutStarted()` send cart and wishlist events (`add_to_wishlist`, `remove_from_wishlist`) from the backend.
 - `Retry::decide($exception)` tells a queue what to do with a failed batch: `retry` (after `Retry::delay($attempt)`), `drop` (invalid data) or `settings` (the key is wrong).
 - The contract as JSON Schema: `resources/ecommerce-events.schema.json` — validate your messages against it in tests.
 - `$onetrace->checkKey()` / `checkKey('write')` — type, project and permissions of a key, for a "Test connection" button.
