@@ -122,6 +122,8 @@ final class OperationsTest extends TestCase
             'messages.send' => static function (Client $c) use ($identity) { return $c->messages()->send($identity, 12, ['data' => ['order_id' => 'A-1001']]); },
             'messages.show' => static function (Client $c) { return $c->messages()->get('0199c0de-0000-7000-8000-000000000001'); },
             'messages.cascade' => static function (Client $c) { return $c->messages()->cascade('0199c0de-0000-7000-8000-000000000002'); },
+            'emails.send' => static function (Client $c) { return $c->emails()->send(['to' => 'anna@example.com', 'kind' => 'order_placed', 'subject' => 'Order 1001', 'html' => '<p>Thanks!</p>']); },
+            'emails.settings' => static function (Client $c) { return $c->emails()->settings(); },
             'conversations.index' => static function (Client $c) use ($identity) { return $c->chats()->conversations(['status' => 'open', 'profile' => $identity]); },
             'conversations.show' => static function (Client $c) { return $c->chats()->conversation('0199c0de-0000-7000-8000-000000000003', 50); },
             'conversations.messages.store' => static function (Client $c) { return $c->chats()->reply('0199c0de-0000-7000-8000-000000000003', 'Your order ships today.'); },

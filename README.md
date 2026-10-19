@@ -264,6 +264,46 @@ $onetrace->messages()->cascade($cascade['id']); // running, reached (reached_cha
 
 A transactional template skips consents, frequency limits and quiet hours, but not hard blocks of the channel (the address does not exist, the bot is blocked); other templates follow all messaging rules. `integration_id` is needed when the template's channel has several active integrations. Each recipient gets at most 20 messages an hour through the API (429 with `Retry-After`).
 
+## Store emails
+
+The shop's own emails — order confirmations, registration, password resets, invoices — go out through the project's email integration as is, with delivery statuses and history in the customer profile. Order emails can be built from OneTrace templates instead (the store emails section): then send the order data, not the HTML. Needs a secret key with `messages.send`.
+
+```php
+use OneTrace\Resource\Emails;
+
+$settings = $onetrace->emails()->settings(); // cache it for a few minutes
+
+try {
+    switch (Emails::route($settings, 'order_shipped')) {
+        case Emails::TEMPLATE: // OneTrace builds the email in the customer's language
+            $onetrace->emails()->send([
+                'to' => 'anna@example.com',
+                'kind' => 'order_shipped',
+                'language' => 'de',
+                'order' => $order->emailData(['number' => '1001', 'url' => $orderUrl, 'carrier' => 'DHL', 'tracking_number' => 'JD0001', 'tracking_url' => $trackingUrl]),
+            ], 'order-1001-shipped');
+            break;
+        case Emails::RELAY: // the shop's own email as is
+            $onetrace->emails()->send([
+                'to' => 'anna@example.com',
+                'kind' => 'order_shipped',
+                'subject' => $subject,
+                'html' => $html,
+                'attachments' => [Emails::attachment('invoice-1001.pdf', 'application/pdf', $pdf)],
+            ], 'order-1001-shipped');
+            break;
+        default:
+            $mailer->send($nativeEmail);
+    }
+} catch (\OneTrace\Exception\OneTraceException $e) {
+    $mailer->send($nativeEmail); // not accepted or unavailable: the shop sends it itself
+}
+```
+
+- `kind`: `order_placed`, `order_paid`, `order_shipped`, `order_delivered`, `order_cancelled`, `order_refunded` (`Emails::ORDER_KINDS`, can be built from templates), `account_new`, `password_reset`, `email_verification`, `login_link`, `login_code` (`Emails::ACCESS_KINDS`: no click tracking, only the subject is kept after sending), any other `[a-z0-9_]` name.
+- `Order::emailData()` adds the number, links, tracking, reason, payment instructions and addresses (`Order::address()`) to the order; `LineItem::withDisplay()` — SKU, image, link and variant options of a line. Events keep the contract and do not carry these fields.
+- Up to 5 attachments, 5 MB in total; `reply_to` and `from_name` override the integration settings; the sender address is always the integration's.
+
 ## Chat conversations
 
 Conversations of the online chat (website and messengers) for bots and external helpdesk systems. Reading needs a secret key with `chats.read`, answers and closing — `chats.reply`.

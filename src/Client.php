@@ -12,6 +12,7 @@ use OneTrace\Resource\Analytics;
 use OneTrace\Resource\Campaigns;
 use OneTrace\Resource\Catalog;
 use OneTrace\Resource\Chats;
+use OneTrace\Resource\Emails;
 use OneTrace\Resource\Events;
 use OneTrace\Resource\Journeys;
 use OneTrace\Resource\Loyalty;
@@ -44,7 +45,7 @@ use Psr\Http\Message\StreamFactoryInterface;
  */
 final class Client
 {
-    public const VERSION = '1.11.0';
+    public const VERSION = '1.12.0';
 
     /**
      * API operations (operationId of the OpenAPI specification) and the methods that call them.
@@ -143,6 +144,8 @@ final class Client
         'messages.send' => 'messages.send',
         'messages.show' => 'messages.get',
         'messages.cascade' => 'messages.cascade',
+        'emails.send' => 'emails.send',
+        'emails.settings' => 'emails.settings',
         'conversations.index' => 'chats.conversations',
         'conversations.show' => 'chats.conversation',
         'conversations.messages.store' => 'chats.reply',
@@ -342,6 +345,14 @@ final class Client
     public function messages(): Messages
     {
         return $this->resource(Messages::class);
+    }
+
+    /**
+     * Store emails: relay ready emails of the shop, order emails from OneTrace templates, the section settings.
+     */
+    public function emails(): Emails
+    {
+        return $this->resource(Emails::class);
     }
 
     /**

@@ -612,7 +612,7 @@
         "tags": [
           "recommendations"
         ],
-        "description": "Write key (tracker). Personal and recently viewed recommendations use the profile of `anonymousId` only. Only available products are returned.",
+        "description": "Write key (tracker). Personal and recently viewed recommendations use the profile of `anonymousId` only. Only available products are returned. `replenish` — products the visitor buys regularly whose repeat-purchase cycle has come (needs “Time to reorder” in the recommendation settings).",
         "security": [
           {
             "writeKey": []
@@ -635,7 +635,8 @@
                 "viewed_with",
                 "bought_with",
                 "similar",
-                "recently_viewed"
+                "recently_viewed",
+                "replenish"
               ]
             }
           },
@@ -4271,6 +4272,71 @@
         "description": "Used by the website chat widget of the tracker; not part of the SDKs. To read and answer conversations from a server, use `/conversations`."
       }
     },
+    "/chat/handoff": {
+      "post": {
+        "operationId": "chat.handoff",
+        "summary": "Ask for a human operator",
+        "tags": [
+          "chat"
+        ],
+        "security": [
+          {
+            "writeKey": []
+          },
+          {
+            "secretKey": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "conversation",
+                  "token"
+                ],
+                "properties": {
+                  "conversation": {
+                    "type": "string",
+                    "format": "uuid",
+                    "description": "Conversation id from POST /chat/messages"
+                  },
+                  "token": {
+                    "type": "string",
+                    "maxLength": 64,
+                    "description": "Visitor token of the conversation from POST /chat/messages"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The bot handed the conversation over to the operators",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "conversation": {
+                      "$ref": "#/components/schemas/ChatVisitorConversation"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Unknown conversation or wrong token"
+          }
+        },
+        "x-internal": true,
+        "description": "The bot (AI in the chat) hands the conversation over to the queue of human operators. Used by the website chat widget of the tracker; not part of the SDKs. To read and answer conversations from a server, use `/conversations`."
+      }
+    },
     "/chat/realtime": {
       "post": {
         "operationId": "chat.realtime",
@@ -4404,6 +4470,31 @@
             "schema": {
               "type": "number",
               "minimum": 0
+            }
+          },
+          {
+            "name": "attr",
+            "in": "query",
+            "style": "deepObject",
+            "explode": true,
+            "description": "Filters by product characteristics of the store industry (ADR-114), e.g. `attr[season]=winter&attr[rim_diameter][]=16&attr[rim_diameter][]=17`: any of the values of a key, all keys. Keys and values — from `facets.attributes`.",
+            "schema": {
+              "type": "object",
+              "maxProperties": 20,
+              "additionalProperties": {
+                "oneOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "array",
+                    "maxItems": 20,
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                ]
+              }
             }
           },
           {
@@ -4576,6 +4667,38 @@
                               ]
                             }
                           }
+                        },
+                        "attributes": {
+                          "type": "array",
+                          "description": "Characteristics of the store industry with values and product counts; values go to `attr[key]`.",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "key": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string"
+                              },
+                              "values": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "value": {
+                                      "type": "string"
+                                    },
+                                    "label": {
+                                      "type": "string"
+                                    },
+                                    "count": {
+                                      "type": "integer"
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          }
                         }
                       }
                     },
@@ -4586,6 +4709,17 @@
                       ],
                       "format": "uri",
                       "description": "Redirect rule of the query (Site → Search): the page to open instead of the results, or null."
+                    },
+                    "filters": {
+                      "type": "object",
+                      "description": "Sizes and parameters recognized in the query text and applied as filters (“205/55 r16 winter” → tire_width, tire_profile, rim_diameter, season); empty when nothing was recognized or nothing matched them.",
+                      "additionalProperties": {
+                        "type": [
+                          "string",
+                          "number",
+                          "boolean"
+                        ]
+                      }
                     }
                   }
                 }
@@ -6912,6 +7046,102 @@
         }
       }
     },
+    "/emails": {
+      "post": {
+        "operationId": "emails.send",
+        "summary": "Send a store email",
+        "tags": [
+          "messages"
+        ],
+        "description": "Sends a ready email of an online store — an order confirmation, an invoice, a password reset — through the project's email integration as is, without a template. The email goes to `to` as a transactional message: no marketing consent or frequency rules, but bounced and complained addresses are blocked. It is counted in the monthly message quota. The answer is fast: when it is not `202` (no email integration, quota exhausted, the service is unavailable), send the email yourself. Repeat the request with the same `Idempotency-Key` to retry safely. No more than `MESSAGES_STORE_EMAILS_PER_RECIPIENT_PER_HOUR` (30 by default) store emails per recipient per hour. Order emails (`order_*` kinds) with `order` are built from the OneTrace template enabled for the kind, in the customer `language`; without an enabled template `subject` and `html` are required. Poll `GET /messages/{message}` for the delivery status.\n\nRequires key permission(s): `messages.send`.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StoreEmailInput"
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "secretKey": []
+          }
+        ],
+        "x-required-scopes": [
+          "messages.send"
+        ],
+        "responses": {
+          "202": {
+            "description": "Queued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StoreEmailStatus"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "402": {
+            "$ref": "#/components/responses/Error"
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/emails/settings": {
+      "get": {
+        "operationId": "emails.settings",
+        "summary": "Store email settings",
+        "tags": [
+          "messages"
+        ],
+        "description": "What the store plugin should do: relay store emails through OneTrace and which order emails are built from OneTrace templates. Cache for a few minutes.\n\nRequires key permission(s): `messages.send`.",
+        "security": [
+          {
+            "secretKey": []
+          }
+        ],
+        "x-required-scopes": [
+          "messages.send"
+        ],
+        "responses": {
+          "200": {
+            "description": "Settings",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StoreEmailSettings"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          }
+        }
+      }
+    },
     "/messages/cascades/{cascade}": {
       "get": {
         "operationId": "messages.cascade",
@@ -7310,6 +7540,238 @@
           },
           "404": {
             "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/forms/{uid}/submissions": {
+      "post": {
+        "operationId": "forms.submit",
+        "summary": "Submit a website form",
+        "tags": [
+          "forms"
+        ],
+        "description": "A visitor submits a signup form of the website (popup, flyout, embedded form or bar). With double opt-in the address gets a confirmation email and becomes part of the profile only after the visitor confirms it; otherwise the email or phone, the consent and the promo code of the form are applied at once.\n\nUsed by the website forms of the tracker; not part of the SDKs.",
+        "x-internal": true,
+        "security": [
+          {
+            "writeKey": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "uid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "maxLength": 16
+            },
+            "description": "Form `uid` from the site code."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "anonymousId",
+                  "values"
+                ],
+                "properties": {
+                  "anonymousId": {
+                    "type": "string",
+                    "maxLength": 255
+                  },
+                  "userId": {
+                    "type": "string",
+                    "maxLength": 255
+                  },
+                  "values": {
+                    "type": "object",
+                    "description": "Form fields: email, phone, first_name, last_name, birthday (YYYY-MM-DD) and consent (boolean).",
+                    "additionalProperties": true
+                  },
+                  "language": {
+                    "type": "string",
+                    "maxLength": 35
+                  },
+                  "page": {
+                    "type": "string",
+                    "maxLength": 2000
+                  },
+                  "website": {
+                    "type": "string",
+                    "description": "Hidden trap field: must stay empty."
+                  },
+                  "variant": {
+                    "type": "string",
+                    "enum": [
+                      "a",
+                      "b",
+                      "c",
+                      "d"
+                    ],
+                    "description": "A/B variant of the form the visitor saw."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Accepted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "pending",
+                        "accepted"
+                      ],
+                      "description": "`pending` — waiting for the confirmation link; `accepted` — applied to the profile."
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "Text for the visitor in their language."
+                    },
+                    "promo_code": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "description": "Promo code of the form when the submission is accepted at once."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/forms": {
+      "get": {
+        "operationId": "forms.config",
+        "summary": "Active website forms",
+        "tags": [
+          "forms"
+        ],
+        "description": "Active signup forms of the project for the tracker: type, fields, design, display rules and the texts in the visitor's language. The tracker loads its forms module only when there is at least one.\n\nUsed by the website forms of the tracker; not part of the SDKs.",
+        "x-internal": true,
+        "security": [
+          {
+            "writeKey": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "language",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 35
+            },
+            "description": "Visitor language (BCP 47)."
+          },
+          {
+            "name": "anonymousId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 255
+            },
+            "description": "Visitor id: forms shown to segment members are filtered by the visitor's profile."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "forms"
+                  ],
+                  "properties": {
+                    "forms": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "uid": {
+                            "type": "string"
+                          },
+                          "kind": {
+                            "type": "string",
+                            "enum": [
+                              "popup",
+                              "flyout",
+                              "embedded",
+                              "bar"
+                            ]
+                          },
+                          "double_opt_in": {
+                            "type": "boolean"
+                          },
+                          "settings": {
+                            "type": "object",
+                            "additionalProperties": true
+                          },
+                          "rules": {
+                            "type": "object",
+                            "additionalProperties": true
+                          },
+                          "texts": {
+                            "type": "object",
+                            "additionalProperties": {
+                              "type": "string"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
           }
         }
       }
@@ -8848,6 +9310,13 @@
               "string",
               "null"
             ]
+          },
+          "min_quantity": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "description": "The product is sold as a set (tires by 4): how many to add to the cart; null — one."
           }
         }
       },
@@ -8891,6 +9360,11 @@
           "available": {
             "type": "boolean",
             "default": true
+          },
+          "stock": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Units in stock. Used only when \"Use stock levels from the API and plugins\" is on in the catalog settings of the project: then the stock is saved, zero takes the product off sale, and the \"low stock\" journey trigger works. Otherwise it is ignored."
           },
           "category_ids": {
             "type": "array",
@@ -10634,7 +11108,7 @@
               "string",
               "null"
             ],
-            "description": "`api` for messages sent with this operation."
+            "description": "`api` for messages sent with `messages.send`, `store` for store emails (`emails.send`)."
           },
           "created_at": {
             "type": [
@@ -10825,6 +11299,10 @@
           "created_at": {
             "type": "string",
             "format": "date-time"
+          },
+          "bot": {
+            "type": "boolean",
+            "description": "Reply of the AI bot; operator holds the bot name"
           }
         }
       },
@@ -10852,6 +11330,10 @@
           "token": {
             "type": "string",
             "description": "Returned for a new conversation or when the request had no valid token; store it"
+          },
+          "bot": {
+            "type": "boolean",
+            "description": "The AI bot leads the conversation: the widget offers to call an operator (POST /chat/handoff)"
           }
         }
       },
@@ -11051,6 +11533,519 @@
             }
           }
         ]
+      },
+      "StoreEmailInput": {
+        "type": "object",
+        "required": [
+          "to",
+          "kind"
+        ],
+        "properties": {
+          "to": {
+            "type": "string",
+            "format": "email",
+            "maxLength": 254,
+            "description": "Recipient address. The profile is found by this email or created."
+          },
+          "subject": {
+            "type": "string",
+            "maxLength": 998,
+            "description": "Required unless an order template is enabled for `kind` and `order` is given."
+          },
+          "html": {
+            "type": "string",
+            "maxLength": 1000000,
+            "description": "Ready HTML of the store email. Sent as is: it is not a template, braces are not processed. Required unless an order template is enabled for `kind` and `order` is given."
+          },
+          "text": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 1000000,
+            "description": "Plain-text part; built from the HTML when empty."
+          },
+          "reply_to": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "email",
+            "description": "Overrides the Reply-To of the email integration."
+          },
+          "from_name": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 100,
+            "description": "Overrides the sender name of the email integration; the sender address is always the integration's."
+          },
+          "kind": {
+            "type": "string",
+            "pattern": "^[a-z0-9_]{1,40}$",
+            "description": "What the email is: `order_placed`, `order_paid`, `order_shipped`, `order_delivered`, `order_cancelled`, `order_refunded`, `account_new`, `password_reset`, `email_verification`, `login_link`, `login_code`, `other` … Access-link kinds (`password_reset`, `account_new`, `email_verification`, `login_link`, `login_code`) go without click tracking, and only the subject is kept after sending. For `order_placed`, `order_paid`, `order_shipped`, `order_delivered`, `order_cancelled`, `order_refunded` with `order`, an enabled OneTrace template builds the email instead of `html` (see `GET /emails/settings`)."
+          },
+          "language": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 20,
+            "description": "Customer language tag: picks the language version of an order template; for history and reports otherwise."
+          },
+          "integration_id": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "description": "Email integration; may be omitted when the project has exactly one active."
+          },
+          "traits": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "additionalProperties": true,
+            "description": "Profile traits to update before sending (name, phone)."
+          },
+          "attachments": {
+            "type": "array",
+            "maxItems": 5,
+            "description": "Up to 5 files, 5 MB in total.",
+            "items": {
+              "type": "object",
+              "required": [
+                "name",
+                "type",
+                "content"
+              ],
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "maxLength": 200
+                },
+                "type": {
+                  "type": "string",
+                  "enum": [
+                    "application/pdf",
+                    "image/png",
+                    "image/jpeg",
+                    "image/gif",
+                    "text/plain",
+                    "text/csv",
+                    "text/calendar"
+                  ]
+                },
+                "content": {
+                  "type": "string",
+                  "format": "byte",
+                  "description": "File contents in base64."
+                }
+              }
+            }
+          },
+          "order": {
+            "$ref": "#/components/schemas/StoreOrder"
+          }
+        }
+      },
+      "StoreEmailStatus": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/MessageStatus"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "template": {
+                "type": "boolean",
+                "description": "The email is built from a OneTrace order template."
+              }
+            }
+          }
+        ]
+      },
+      "StoreOrder": {
+        "type": "object",
+        "required": [
+          "order_id",
+          "currency",
+          "amount"
+        ],
+        "description": "Order data for order email templates — the `order` template variable.",
+        "properties": {
+          "order_id": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "number": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 100,
+            "description": "Number shown to the customer; `order_id` when empty."
+          },
+          "url": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uri",
+            "description": "Order page for the customer."
+          },
+          "created_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "currency": {
+            "type": "string",
+            "pattern": "^[A-Za-z]{3}$"
+          },
+          "amount": {
+            "type": "number",
+            "description": "Order total."
+          },
+          "subtotal": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "discount": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "shipping": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "tax": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "refund_amount": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "coupon": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "payment_method": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "shipping_method": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "carrier": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "tracking_number": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "tracking_url": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uri"
+          },
+          "estimated_delivery": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date"
+          },
+          "reason": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Cancellation or refund reason."
+          },
+          "note": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "payment_instructions": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Bank transfer details and similar instructions."
+          },
+          "products": {
+            "type": "array",
+            "maxItems": 100,
+            "items": {
+              "type": "object",
+              "required": [
+                "product_name",
+                "quantity",
+                "price"
+              ],
+              "properties": {
+                "product_id": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "variant_id": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "sku": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "product_name": {
+                  "type": "string",
+                  "maxLength": 300
+                },
+                "quantity": {
+                  "type": "number"
+                },
+                "price": {
+                  "type": "number"
+                },
+                "total": {
+                  "type": [
+                    "number",
+                    "null"
+                  ],
+                  "description": "Line total; price × quantity when empty."
+                },
+                "image_url": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "uri"
+                },
+                "url": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "uri"
+                },
+                "options": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "maxLength": 500,
+                  "description": "Variant options as text: «Size: M, colour: white»."
+                }
+              }
+            }
+          },
+          "shipping_address": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "name": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "maxLength": 200
+              },
+              "company": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "maxLength": 200
+              },
+              "address1": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "maxLength": 200
+              },
+              "address2": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "maxLength": 200
+              },
+              "city": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "maxLength": 200
+              },
+              "region": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "maxLength": 200
+              },
+              "postcode": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "maxLength": 200
+              },
+              "country": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "maxLength": 200
+              },
+              "phone": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "maxLength": 200
+              }
+            }
+          },
+          "billing_address": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "name": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "maxLength": 200
+              },
+              "company": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "maxLength": 200
+              },
+              "address1": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "maxLength": 200
+              },
+              "address2": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "maxLength": 200
+              },
+              "city": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "maxLength": 200
+              },
+              "region": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "maxLength": 200
+              },
+              "postcode": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "maxLength": 200
+              },
+              "country": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "maxLength": 200
+              },
+              "phone": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "maxLength": 200
+              }
+            }
+          }
+        }
+      },
+      "StoreEmailSettings": {
+        "type": "object",
+        "properties": {
+          "relay": {
+            "type": "boolean",
+            "description": "Send all store emails through OneTrace (store emails section)."
+          },
+          "integration_id": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "templates": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "boolean"
+            },
+            "description": "Order email kinds built from OneTrace templates: the store does not send its own email for them and passes `order` instead."
+          }
+        }
       }
     }
   }

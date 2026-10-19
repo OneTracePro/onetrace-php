@@ -2,6 +2,11 @@
 
 All notable changes are documented here. The project follows [Semantic Versioning](https://semver.org/).
 
+## 1.12.0 — 2026-10-19
+
+- `emails()`: store emails through OneTrace — `send()` relays a ready email of the shop (subject, HTML, text, reply-to, sender name, attachments via `Emails::attachment()`) or builds an order email from the OneTrace template with `order` data; `settings()` of the store emails section; `Emails::route()` tells whether to send the order data, relay the shop email or let the shop send it natively.
+- `Order::emailData()` and `Order::address()` — the order of an order email with the number, links, tracking, reason, payment instructions and addresses; `LineItem::withDisplay()` — SKU, image, link and variant options of a line (not in events).
+
 ## 1.11.0 — 2026-10-19
 
 - `Messages::orderShipped()` — the order (or a parcel of it) is handed over to delivery: carrier, tracking number, tracking link, expected delivery date and shipped products; the message id is unique per parcel (the tracking number or `$shipmentId`).

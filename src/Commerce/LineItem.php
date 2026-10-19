@@ -28,6 +28,9 @@ final class LineItem
     /** @var string|null */
     public $categoryId;
 
+    /** @var array<string, string> sku, image_url, url, options — for order emails only (see emailData()) */
+    public $display = [];
+
     /**
      * @param string|int $productId
      * @param string|int|null $variantId
@@ -41,6 +44,42 @@ final class LineItem
         $this->quantity = max(1, $quantity);
         $this->variantId = $variantId !== null && (string) $variantId !== '' && (string) $variantId !== (string) $productId ? (string) $variantId : null;
         $this->categoryId = $categoryId !== null && (string) $categoryId !== '' ? (string) $categoryId : null;
+    }
+
+    /**
+     * What an order email shows for the line: sku, image_url and url (http/https links) and options (variant options
+     * as text, «Size: M, colour: white»). Empty values are left out. Events do not carry these fields.
+     *
+     * @param array<string, string|null> $display
+     */
+    public function withDisplay(array $display): self
+    {
+        $copy = clone $this;
+
+        foreach (['sku' => 100, 'options' => 500, 'image_url' => 2000, 'url' => 2000] as $key => $max) {
+            $value = isset($display[$key]) ? trim((string) $display[$key]) : '';
+
+            if ($value === '' || strlen($value) > $max || (in_array($key, ['image_url', 'url'], true) && !Order::isLink($value))) {
+                continue;
+            }
+
+            $copy->display[$key] = $value;
+        }
+
+        return $copy;
+    }
+
+    /**
+     * The line in Order::emailData(): the event fields without the category, the line total and display fields.
+     *
+     * @return array<string, string|int|float>
+     */
+    public function emailData(): array
+    {
+        $data = $this->toArray();
+        unset($data['category_id']);
+
+        return $data + ['total' => round($this->price * $this->quantity, 2)] + $this->display;
     }
 
     /**
