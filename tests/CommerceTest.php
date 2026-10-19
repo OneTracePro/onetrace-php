@@ -67,6 +67,30 @@ final class CommerceTest extends TestCase
         }
     }
 
+    public function testBuildsShipmentEventsOncePerParcel(): void
+    {
+        $messages = new Messages('magento2', 'https://shop.example.com/');
+        $at = new \DateTimeImmutable('2026-10-19 12:00:00', new \DateTimeZone('Europe/Berlin'));
+        $shipped = $messages->orderShipped($this->order(), ' DHL ', 'JD 0146 0012', 'https://track.example/JD0146', new \DateTimeImmutable('2026-10-22'), $at);
+        $second = $messages->orderShipped($this->order(), 'DHL', 'JD0147', null, null, $at, 'parcel-2');
+        $bare = $messages->orderShipped($this->order(), null, null, 'not a url');
+        $delivered = $messages->orderDelivered($this->order(), $at);
+
+        self::assertSame('order_shipped', $shipped['event']);
+        self::assertSame(['order_id' => 'A-1001', 'carrier' => 'DHL', 'tracking_number' => 'JD 0146 0012', 'tracking_url' => 'https://track.example/JD0146', 'estimated_delivery' => '2026-10-22'], $shipped['properties']);
+        self::assertSame('2026-10-19T10:00:00.000Z', $shipped['timestamp']);
+        self::assertStringEndsWith(':A-1001:order_shipped:JD01460012', $shipped['messageId']);
+        self::assertStringEndsWith(':A-1001:order_shipped:parcel-2', $second['messageId']);
+        self::assertSame(['order_id' => 'A-1001'], $bare['properties']);
+        self::assertStringEndsWith(':A-1001:order_shipped', $bare['messageId']);
+        self::assertSame(['order_id' => 'A-1001'], $delivered['properties']);
+        self::assertStringEndsWith(':A-1001:order_delivered', $delivered['messageId']);
+
+        foreach ([$shipped, $second, $bare, $delivered] as $message) {
+            self::assertMatchesContract($message);
+        }
+    }
+
     public function testSendsConsentsWithTheSecretKeyEvenWhenTheWriteKeyIsSet(): void
     {
         $transport = new Support\FakeTransport();

@@ -319,7 +319,7 @@ $onetrace->products()->upsert([CatalogItem::make('SKU-1', 'Sneakers', $url, $ima
 ```
 
 - `Customer` keeps only valid values: the phone in E.164, the country as ISO 3166-1, the language as a BCP 47 tag.
-- `orderPaid()`, `orderCancelled()` and `orderRefunded()` follow order status changes; `product()` and `checkoutStarted()` send cart and wishlist events (`add_to_wishlist`, `remove_from_wishlist`) from the backend.
+- `orderPaid()`, `orderCancelled()` and `orderRefunded()` follow order status changes; `orderShipped()` (carrier, tracking number and link, expected delivery date; once per parcel) and `orderDelivered()` tell the platform where the order is — the online chat AI answers "where is my order" from them; `product()` and `checkoutStarted()` send cart and wishlist events (`add_to_wishlist`, `remove_from_wishlist`) from the backend.
 - `Retry::decide($exception)` tells a queue what to do with a failed batch: `retry` (after `Retry::delay($attempt)`), `drop` (invalid data) or `settings` (the key is wrong).
 - The contract as JSON Schema: `resources/ecommerce-events.schema.json` — validate your messages against it in tests.
 - `$onetrace->checkKey()` / `checkKey('write')` — type, project and permissions of a key, for a "Test connection" button.

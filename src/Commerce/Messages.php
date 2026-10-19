@@ -30,6 +30,10 @@ final class Messages
 
     public const ORDER_REFUNDED = 'order_refunded';
 
+    public const ORDER_SHIPPED = 'order_shipped';
+
+    public const ORDER_DELIVERED = 'order_delivered';
+
     /** @var string */
     private $platform;
 
@@ -132,6 +136,57 @@ final class Messages
         }
 
         return $this->order($order, self::ORDER_REFUNDED, $properties, $at ?? $order->placedAt, $refundId !== null ? (string) $refundId : null);
+    }
+
+    /**
+     * The order (or a part of it) is handed over to delivery. Each parcel is sent once: $shipmentId (the tracking
+     * number by default) tells several parcels of one order apart. The platform shows the carrier, the tracking
+     * number and the link to the customer and to the AI of the online chat ("where is my order").
+     *
+     * @param string|int|null $shipmentId
+     * @param list<LineItem> $lines shipped products of a partial shipment, if known
+     *
+     * @return array<string, mixed>
+     */
+    public function orderShipped(
+        Order $order,
+        ?string $carrier = null,
+        ?string $trackingNumber = null,
+        ?string $trackingUrl = null,
+        ?\DateTimeInterface $estimatedDelivery = null,
+        ?\DateTimeInterface $at = null,
+        $shipmentId = null,
+        array $lines = []
+    ): array {
+        $properties = array_filter([
+            'order_id' => $order->id,
+            'carrier' => self::text($carrier, 100),
+            'tracking_number' => self::text($trackingNumber, 100),
+            'tracking_url' => $trackingUrl !== null && filter_var($trackingUrl, FILTER_VALIDATE_URL) !== false ? $trackingUrl : null,
+            'estimated_delivery' => $estimatedDelivery !== null ? $estimatedDelivery->format('Y-m-d') : null,
+        ], static function ($value): bool {
+            return $value !== null;
+        });
+
+        if ($lines !== []) {
+            $properties['products'] = array_map(static function (LineItem $line): array {
+                return $line->toArray();
+            }, $lines);
+        }
+
+        $suffix = $shipmentId !== null ? (string) $shipmentId : ($properties['tracking_number'] ?? null);
+
+        return $this->order($order, self::ORDER_SHIPPED, $properties, $at ?? new \DateTimeImmutable(), $suffix !== null ? preg_replace('/[^A-Za-z0-9_-]/', '', $suffix) : null);
+    }
+
+    /**
+     * The customer received the order.
+     *
+     * @return array<string, mixed>
+     */
+    public function orderDelivered(Order $order, ?\DateTimeInterface $at = null): array
+    {
+        return $this->order($order, self::ORDER_DELIVERED, ['order_id' => $order->id], $at ?? new \DateTimeImmutable());
     }
 
     /**
@@ -247,6 +302,17 @@ final class Messages
         }
 
         return $consent;
+    }
+
+    private static function text(?string $value, int $max): ?string
+    {
+        $value = $value !== null ? trim($value) : '';
+
+        if ($value === '') {
+            return null;
+        }
+
+        return function_exists('mb_substr') ? mb_substr($value, 0, $max) : substr($value, 0, $max);
     }
 
     private static function time(\DateTimeInterface $at): string

@@ -2,6 +2,12 @@
 
 All notable changes are documented here. The project follows [Semantic Versioning](https://semver.org/).
 
+## 1.11.0 — 2026-10-19
+
+- `Messages::orderShipped()` — the order (or a parcel of it) is handed over to delivery: carrier, tracking number, tracking link, expected delivery date and shipped products; the message id is unique per parcel (the tracking number or `$shipmentId`).
+- `Messages::orderDelivered()` — the customer received the order.
+- The e-commerce event contract (`resources/ecommerce-events.schema.json`) has the `order_shipped` and `order_delivered` events.
+
 ## 1.10.0 — 2026-10-18
 
 - `CatalogItem::make()`: optional `$stock` (units in stock). The platform uses it only when stock levels are on in its catalog settings: then zero takes the product off sale and the "low stock" journey trigger works.

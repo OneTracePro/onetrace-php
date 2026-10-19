@@ -8,6 +8,7 @@
     { "$ref": "#/$defs/productEvent" },
     { "$ref": "#/$defs/checkoutStarted" },
     { "$ref": "#/$defs/orderEvent" },
+    { "$ref": "#/$defs/shipmentEvent" },
     { "$ref": "#/$defs/searchEvent" },
     { "$ref": "#/$defs/searchClick" }
   ],
@@ -138,6 +139,28 @@
             "discount": { "$ref": "#/$defs/money" },
             "coupon": { "type": "string" },
             "payment_method": { "type": "string" },
+            "shipping_method": { "type": "string" },
+            "products": { "type": "array", "items": { "$ref": "#/$defs/line" } }
+          }
+        }
+      }
+    },
+    "shipmentEvent": {
+      "allOf": [{ "$ref": "#/$defs/base" }],
+      "type": "object",
+      "required": ["type", "messageId", "event", "properties", "timestamp"],
+      "properties": {
+        "type": { "const": "track" },
+        "event": { "enum": ["order_shipped", "order_delivered"] },
+        "properties": {
+          "type": "object",
+          "required": ["order_id"],
+          "properties": {
+            "order_id": { "$ref": "#/$defs/id" },
+            "carrier": { "type": "string", "maxLength": 100 },
+            "tracking_number": { "type": "string", "maxLength": 100 },
+            "tracking_url": { "type": "string", "format": "uri" },
+            "estimated_delivery": { "type": "string", "format": "date" },
             "shipping_method": { "type": "string" },
             "products": { "type": "array", "items": { "$ref": "#/$defs/line" } }
           }
