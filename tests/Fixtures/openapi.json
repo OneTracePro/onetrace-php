@@ -4025,6 +4025,11 @@
                   "language": {
                     "type": "string",
                     "maxLength": 35
+                  },
+                  "customer_token": {
+                    "type": "string",
+                    "maxLength": 2000,
+                    "description": "Token of the customer signed in to the store website, issued by the store (store MCP contract, docs/api/store-mcp.md#5). The store verifies it; the platform stores it encrypted."
                   }
                 }
               }
@@ -7772,6 +7777,152 @@
           },
           "429": {
             "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/chat/store-mcp": {
+      "put": {
+        "operationId": "chat.storeMcp.save",
+        "summary": "Connect the store MCP server to the AI bot",
+        "tags": [
+          "conversations"
+        ],
+        "description": "A store plugin connects its MCP server (contract: docs/api/store-mcp.md) to the AI bot of the project: the platform checks the contract marker in `initialize`, reads `tools/list` and keeps the contract tools the store owner allowed. One server per URL: calling again updates the key and re-reads the tools.\n\nRequires key permission(s): `chats.manage`.",
+        "security": [
+          {
+            "secretKey": []
+          }
+        ],
+        "x-required-scopes": [
+          "chats.manage"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "url",
+                  "key"
+                ],
+                "properties": {
+                  "url": {
+                    "type": "string",
+                    "format": "uri",
+                    "maxLength": 2048,
+                    "description": "HTTPS address of the store MCP server"
+                  },
+                  "key": {
+                    "type": "string",
+                    "minLength": 32,
+                    "maxLength": 500,
+                    "description": "Bearer key the platform sends to the store"
+                  },
+                  "name": {
+                    "type": "string",
+                    "maxLength": 120
+                  },
+                  "platform": {
+                    "type": "string",
+                    "enum": [
+                      "woocommerce",
+                      "magento",
+                      "bitrix",
+                      "sdk",
+                      "custom"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StoreMcpServer"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "Connected",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StoreMcpServer"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      },
+      "delete": {
+        "operationId": "chat.storeMcp.delete",
+        "summary": "Disconnect the store MCP server",
+        "tags": [
+          "conversations"
+        ],
+        "description": "Removes the store MCP server with this URL from the AI bot of the project.\n\nRequires key permission(s): `chats.manage`.",
+        "security": [
+          {
+            "secretKey": []
+          }
+        ],
+        "x-required-scopes": [
+          "chats.manage"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "url"
+                ],
+                "properties": {
+                  "url": {
+                    "type": "string",
+                    "maxLength": 2048
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Disconnected"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationError"
           }
         }
       }
@@ -12044,6 +12195,47 @@
               "type": "boolean"
             },
             "description": "Order email kinds built from OneTrace templates: the store does not send its own email for them and passes `order` instead."
+          }
+        }
+      },
+      "StoreMcpServer": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "url": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "ok",
+              "error"
+            ],
+            "description": "`error` — see `error`; the bot works without this server"
+          },
+          "error": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "tools": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Contract tools the bot may use"
+          },
+          "checked_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
           }
         }
       }

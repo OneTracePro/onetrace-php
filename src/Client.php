@@ -45,7 +45,7 @@ use Psr\Http\Message\StreamFactoryInterface;
  */
 final class Client
 {
-    public const VERSION = '1.12.0';
+    public const VERSION = '1.13.0';
 
     /**
      * API operations (operationId of the OpenAPI specification) and the methods that call them.
@@ -150,6 +150,8 @@ final class Client
         'conversations.show' => 'chats.conversation',
         'conversations.messages.store' => 'chats.reply',
         'conversations.close' => 'chats.close',
+        'chat.storeMcp.save' => 'chats.connectStoreMcp',
+        'chat.storeMcp.delete' => 'chats.disconnectStoreMcp',
         'templates.index' => 'templates.list',
         'templates.store' => 'templates.create',
         'templates.show' => 'templates.get',

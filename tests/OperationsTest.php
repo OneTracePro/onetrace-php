@@ -128,6 +128,8 @@ final class OperationsTest extends TestCase
             'conversations.show' => static function (Client $c) { return $c->chats()->conversation('0199c0de-0000-7000-8000-000000000003', 50); },
             'conversations.messages.store' => static function (Client $c) { return $c->chats()->reply('0199c0de-0000-7000-8000-000000000003', 'Your order ships today.'); },
             'conversations.close' => static function (Client $c) { return $c->chats()->close('0199c0de-0000-7000-8000-000000000003'); },
+            'chat.storeMcp.save' => static function (Client $c) { return $c->chats()->connectStoreMcp('https://shop.example.com/onetrace/mcp', str_repeat('k', 40), 'Shop', 'sdk'); },
+            'chat.storeMcp.delete' => static function (Client $c) { $c->chats()->disconnectStoreMcp('https://shop.example.com/onetrace/mcp'); },
             'templates.index' => static function (Client $c) { return $c->templates()->list(); },
             'templates.store' => static function (Client $c) { return $c->templates()->create(['name' => 'Welcome', 'channel_key' => 'email', 'content' => []]); },
             'templates.show' => static function (Client $c) { return $c->templates()->get(3); },

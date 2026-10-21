@@ -96,4 +96,26 @@ final class Chats extends Resource
 
         return self::filled($params);
     }
+
+    /**
+     * Connects the store MCP server to the AI chat bot of the project (store MCP contract, needs chats.manage): the
+     * platform checks the contract, reads the tools the store owner allowed and starts using them. Calling again
+     * with the same URL updates the key and re-reads the tools.
+     *
+     * @param string $platform woocommerce, magento, bitrix, sdk or custom
+     *
+     * @return array<string, mixed> id, url, status ("ok" or "error" with error), tools, checked_at
+     */
+    public function connectStoreMcp(string $url, string $key, ?string $name = null, string $platform = 'sdk'): array
+    {
+        return $this->requester->request('PUT', '/chat/store-mcp', ['json' => self::filled(['url' => $url, 'key' => $key, 'name' => $name, 'platform' => $platform])]);
+    }
+
+    /**
+     * Disconnects the store MCP server with this URL from the AI chat bot.
+     */
+    public function disconnectStoreMcp(string $url): void
+    {
+        $this->requester->request('DELETE', '/chat/store-mcp', ['json' => ['url' => $url]]);
+    }
 }

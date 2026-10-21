@@ -322,6 +322,42 @@ $onetrace->chats()->close($conversation['id']); // the website visitor is asked 
 
 An answer through the API takes no operator seat: the operator inbox signs it with the name of the key (`via: api`, `api_key`), and the customer gets it in the website widget or in the messenger of the conversation. WhatsApp allows free text only within 24 hours of the customer's last message (`ValidationException` otherwise). A repeated idempotency key does not answer twice.
 
+## Store MCP server for the AI chat bot
+
+The AI chat bot of OneTrace can answer customers with live data of your store and, if you allow it, act on orders: it calls your store's MCP server by the [store MCP contract](https://cdp.onetrace.pro/docs/en/store-mcp) (order status, tracking, stock, delivery, returns, cancellation). `OneTrace\StoreMcp\Server` is a ready server: it checks the platform key, answers the MCP protocol, checks the customer token on customer tools and the customer's consent on actions. You implement only the tools you offer.
+
+```php
+use OneTrace\StoreMcp\{Context, CustomerTokens, Server, ToolError, Verification};
+
+$tokens = new CustomerTokens(getenv('ONETRACE_CUSTOMER_TOKEN_SECRET'));   // 32+ random characters, only the store knows it
+$verification = new Verification(
+    $codeStore,                                                         // OneTrace\StoreMcp\CodeStore: your cache
+    fn (string $contact, ?string $order): ?string => findCustomerId($contact, $order),
+    fn (string $customerId, string $contact, string $code, string $channel) => sendCode($contact, $code, $channel),
+);
+
+$server = new Server(getenv('ONETRACE_STORE_MCP_KEY'), $tokens, [
+    'store_get_customer' => fn (array $args, Context $ctx): array => customerInfo($ctx->customerId),
+    'store_get_order' => function (array $args, Context $ctx): array {
+        $order = findOrder($args['order'], $ctx->customerId);
+
+        if ($order === null) {
+            throw new ToolError(ToolError::NOT_FOUND, 'No such order.');
+        }
+
+        return ['order' => $order->number, 'status' => $order->status, 'status_label' => $order->label($ctx->language)];
+    },
+    'store_cancel_order' => fn (array $args, Context $ctx): array => cancelOrder($args['order'], $ctx->customerId, $ctx->idempotencyKey),
+], ['name' => 'my-shop', 'enabled' => $toolsAllowedByTheOwner, 'verification' => $verification]);
+
+$server->serve();                                         // plain PHP; in a framework — $server->handle($method, $headers, $body)
+$onetrace->chats()->connectStoreMcp('https://shop.example.com/onetrace/mcp', getenv('ONETRACE_STORE_MCP_KEY')); // chats.manage
+```
+
+- Customer tools (`store_find_orders`, `store_get_order`, `store_get_tracking`, actions) run only with a valid customer token: `$ctx->customerId` is the confirmed customer. A customer signed in on your website gets a token without a code — pass `$tokens->issue($customerId)` to the tracker with `cdp.chatCustomer(token)`; others confirm with a code your store sends (`Verification`: 6 digits, 10 minutes, 5 attempts, 5 codes an hour, the same answer for unknown addresses).
+- Actions run only when the customer agreed in the chat (`$ctx->confirmed`); repeat calls carry the same `$ctx->idempotencyKey`.
+- `enabled` — tools the store owner allowed for the bot (keep actions off by default). Throw `ToolError` with a contract code (`not_found`, `not_allowed`, …) and a message for the customer; any other exception answers `unavailable` without details.
+
 ## Message templates
 
 Templates have language versions: `content` in the main `language`, other languages in `translations`. Each recipient gets the version for the `language` trait of their profile, otherwise the main one.

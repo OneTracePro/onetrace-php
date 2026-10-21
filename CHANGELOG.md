@@ -2,6 +2,12 @@
 
 All notable changes are documented here. The project follows [Semantic Versioning](https://semver.org/).
 
+## 1.13.0 — 2026-10-21
+
+- `OneTrace\StoreMcp\Server` — MCP server of a store for the OneTrace AI chat bot (store MCP contract v1): platform key check, `initialize` with the contract marker, `tools/list` of implemented and allowed tools, `tools/call` with customer token and consent checks; `ToolError` for contract errors, other exceptions answer `unavailable`.
+- `CustomerTokens` — signed customer tokens of the store (issue for a signed-in customer, verify on calls); `Verification` with a `CodeStore` — confirmation codes the store sends itself (limits included).
+- `chats()->connectStoreMcp()` and `disconnectStoreMcp()` — connect the store MCP server to the AI bot (`chats.manage`).
+
 ## 1.12.0 — 2026-10-19
 
 - `emails()`: store emails through OneTrace — `send()` relays a ready email of the shop (subject, HTML, text, reply-to, sender name, attachments via `Emails::attachment()`) or builds an order email from the OneTrace template with `order` data; `settings()` of the store emails section; `Emails::route()` tells whether to send the order data, relay the shop email or let the shop send it natively.
