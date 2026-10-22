@@ -7926,6 +7926,253 @@
           }
         }
       }
+    },
+    "/profiles/{type}/{value}/preferences": {
+      "get": {
+        "operationId": "profiles.preferences",
+        "summary": "Subscription preferences of a profile",
+        "tags": [
+          "profiles"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdentityType"
+          },
+          {
+            "$ref": "#/components/parameters/IdentityValue"
+          },
+          {
+            "name": "language",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Language of topic names; the project default when omitted."
+          }
+        ],
+        "security": [
+          {
+            "secretKey": []
+          }
+        ],
+        "x-required-scopes": [
+          "profiles.read"
+        ],
+        "description": "Topics by channel, frequency and pause of marketing messages, and a signed link to the preference center page. Requires key permission(s): `profiles.read`.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProfilePreferences"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      },
+      "put": {
+        "operationId": "profiles.preferences.update",
+        "summary": "Change subscription preferences of a profile",
+        "tags": [
+          "profiles"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdentityType"
+          },
+          {
+            "$ref": "#/components/parameters/IdentityValue"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "topics": {
+                    "type": "object",
+                    "description": "Topic key → channel key → subscribed. Only the given topics and channels change.",
+                    "additionalProperties": {
+                      "type": "object",
+                      "additionalProperties": {
+                        "type": "boolean"
+                      }
+                    },
+                    "example": {
+                      "news": {
+                        "email": true
+                      },
+                      "offers": {
+                        "email": false
+                      }
+                    }
+                  },
+                  "frequency": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "enum": [
+                      "weekly",
+                      "monthly",
+                      null
+                    ],
+                    "description": "Omit to keep."
+                  },
+                  "paused_until": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "format": "date-time",
+                    "description": "Pause marketing messages until this time (within a year); `null` resumes; omit to keep."
+                  },
+                  "unsubscribe_all": {
+                    "type": "boolean",
+                    "description": "Unsubscribe from all marketing messages in every channel of the profile; other fields are ignored."
+                  },
+                  "language": {
+                    "type": "string",
+                    "description": "Language of topic names in the response."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "secretKey": []
+          }
+        ],
+        "x-required-scopes": [
+          "profiles.write"
+        ],
+        "description": "Requires key permission(s): `profiles.write`. Changes are recorded with the source `api`; transactional messages are not affected.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProfilePreferences"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationError"
+          }
+        }
+      }
+    },
+    "/subscription-topics": {
+      "get": {
+        "operationId": "subscriptionTopics.list",
+        "summary": "Subscription topics of the project",
+        "tags": [
+          "profiles"
+        ],
+        "security": [
+          {
+            "secretKey": []
+          }
+        ],
+        "x-required-scopes": [
+          "profiles.read"
+        ],
+        "description": "Topics of the preference center with names and descriptions in the project languages. Requires key permission(s): `profiles.read`.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "key": {
+                            "type": "string"
+                          },
+                          "texts": {
+                            "type": "object",
+                            "description": "Language → {name, description}.",
+                            "additionalProperties": {
+                              "type": "object",
+                              "properties": {
+                                "name": {
+                                  "type": "string"
+                                },
+                                "description": {
+                                  "type": "string"
+                                }
+                              }
+                            }
+                          },
+                          "channels": {
+                            "type": [
+                              "array",
+                              "null"
+                            ],
+                            "items": {
+                              "type": "string"
+                            },
+                            "description": "`null` — all channels."
+                          },
+                          "visible": {
+                            "type": "boolean"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
     }
   },
   "components": {
@@ -12235,6 +12482,95 @@
               "string",
               "null"
             ],
+            "format": "date-time"
+          }
+        }
+      },
+      "ProfilePreferences": {
+        "type": "object",
+        "description": "Subscription preferences of a profile (preference center): topics by channel, frequency and pause of marketing messages.",
+        "properties": {
+          "profile_id": {
+            "type": "integer"
+          },
+          "language": {
+            "type": "string",
+            "example": "en",
+            "description": "Language of topic names."
+          },
+          "channels": {
+            "type": "array",
+            "description": "Channels the profile receives or can receive messages in: channels of its consents and messages of the last year, and channels of active integrations it has an address for.",
+            "items": {
+              "type": "object",
+              "properties": {
+                "key": {
+                  "type": "string",
+                  "example": "email"
+                },
+                "blocked": {
+                  "type": "boolean",
+                  "description": "Hard block (the address does not exist, the bot was stopped): read only."
+                }
+              }
+            }
+          },
+          "topics": {
+            "type": "array",
+            "description": "Visible subscription topics.",
+            "items": {
+              "type": "object",
+              "properties": {
+                "key": {
+                  "type": "string",
+                  "example": "news"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "description": {
+                  "type": "string"
+                },
+                "channels": {
+                  "type": "object",
+                  "description": "Channel key → subscribed (`true`/`false`), `null` — the topic is not offered in this channel.",
+                  "additionalProperties": {
+                    "type": [
+                      "boolean",
+                      "null"
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "frequency": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "weekly",
+              "monthly",
+              null
+            ],
+            "description": "At most one marketing message per week or month across channels; `null` — as usual."
+          },
+          "paused_until": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "Marketing messages are paused until this time."
+          },
+          "preferences_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "Signed link to the preference center page of this profile, valid for 30 days — for a «Manage subscriptions» link in the store account."
+          },
+          "preferences_url_expires_at": {
+            "type": "string",
             "format": "date-time"
           }
         }

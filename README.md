@@ -115,6 +115,27 @@ $onetrace->profiles()->delete('user_id', '42'); // GDPR erasure
 
 Identity types: `user_id`, `anonymous_id`, `email`, `phone`, `telegram_chat_id`, `viber_id`, `web_push`. Personal data in responses is masked unless the key has the `profiles.pii` permission.
 
+### Subscription preferences
+
+The preference center of a profile: subscription topics by channel, frequency and pause of marketing messages. Use it for a «Subscriptions» block in your customer account, or link to the hosted page (`preferences_url`, signed, valid for 30 days):
+
+```php
+$preferences = $onetrace->profiles()->preferences('user_id', '42', 'en');
+// channels: [['key' => 'email', 'blocked' => false]], topics: [['key' => 'news', 'name' => 'News', 'channels' => ['email' => true]]],
+// frequency: null|weekly|monthly, paused_until, preferences_url
+
+$onetrace->profiles()->updatePreferences('user_id', '42', [
+    'topics' => ['news' => ['email' => false]],   // only the given topics and channels change
+    'frequency' => 'weekly',                       // at most one marketing message a week across channels
+    'paused_until' => new DateTimeImmutable('+30 days'),
+]);
+$onetrace->profiles()->updatePreferences('user_id', '42', ['unsubscribe_all' => true]);
+
+$topics = $onetrace->profiles()->subscriptionTopics(); // names and descriptions in the project languages
+```
+
+Reading needs `profiles.read`, changing — `profiles.write`. Transactional messages are not affected.
+
 ## Products and recommendations
 
 ```php

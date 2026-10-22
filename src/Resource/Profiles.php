@@ -82,6 +82,48 @@ final class Profiles extends Resource
     }
 
     /**
+     * Subscription preferences of the profile (preference center): topics by channel, frequency and pause of marketing
+     * messages, and preferences_url — a signed link to the preference center page, valid for 30 days.
+     *
+     * @param string|null $language language of topic names; the project default when null
+     *
+     * @return array<string, mixed> profile_id, language, channels, topics, frequency, paused_until, preferences_url …
+     */
+    public function preferences(string $type, string $value, ?string $language = null): array
+    {
+        return $this->requester->request('GET', $this->profilePath($type, $value) . '/preferences', ['query' => self::filled(['language' => $language])]);
+    }
+
+    /**
+     * Changes subscription preferences; only the given topics and fields change:
+     * updatePreferences('email', 'anna@example.com', ['topics' => ['news' => ['email' => false]], 'frequency' => 'weekly']).
+     *
+     * @param array{topics?: array<string, array<string, bool>>, frequency?: string|null, paused_until?: \DateTimeInterface|string|null, unsubscribe_all?: bool, language?: string} $changes
+     *                    frequency: weekly, monthly or null (as usual); paused_until: null resumes; unsubscribe_all: from all
+     *                    marketing messages in every channel
+     *
+     * @return array<string, mixed> the preferences after the change, as preferences()
+     */
+    public function updatePreferences(string $type, string $value, array $changes): array
+    {
+        if (isset($changes['paused_until']) && $changes['paused_until'] instanceof \DateTimeInterface) {
+            $changes['paused_until'] = $changes['paused_until']->format(\DateTimeInterface::ATOM);
+        }
+
+        return $this->requester->request('PUT', $this->profilePath($type, $value) . '/preferences', ['json' => $changes]);
+    }
+
+    /**
+     * Subscription topics of the project with names and descriptions in the project languages.
+     *
+     * @return array<string, mixed> data: key, texts, channels, visible
+     */
+    public function subscriptionTopics(): array
+    {
+        return $this->requester->request('GET', '/subscription-topics');
+    }
+
+    /**
      * A Telegram deep link that connects the profile to the bot: telegramLink(Identity::userId(42)).
      *
      * @param array{type: string, value: string} $identity

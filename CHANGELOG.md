@@ -2,6 +2,10 @@
 
 All notable changes are documented here. The project follows [Semantic Versioning](https://semver.org/).
 
+## 1.14.0 — 2026-10-22
+
+- Subscription preferences (preference center): `profiles()->preferences()` — topics by channel, frequency and pause of marketing messages and a signed link to the preference center page; `profiles()->updatePreferences()` — change the given topics, frequency or pause, or unsubscribe from everything; `profiles()->subscriptionTopics()` — topics of the project with names in its languages.
+
 ## 1.13.0 — 2026-10-21
 
 - `OneTrace\StoreMcp\Server` — MCP server of a store for the OneTrace AI chat bot (store MCP contract v1): platform key check, `initialize` with the contract marker, `tools/list` of implemented and allowed tools, `tools/call` with customer token and consent checks; `ToolError` for contract errors, other exceptions answer `unavailable`.

@@ -45,7 +45,7 @@ use Psr\Http\Message\StreamFactoryInterface;
  */
 final class Client
 {
-    public const VERSION = '1.13.0';
+    public const VERSION = '1.14.0';
 
     /**
      * API operations (operationId of the OpenAPI specification) and the methods that call them.
@@ -69,6 +69,9 @@ final class Client
         'profiles.destroy' => 'profiles.delete',
         'profiles.events' => 'profiles.events',
         'profiles.consents' => 'profiles.updateConsent',
+        'profiles.preferences' => 'profiles.preferences',
+        'profiles.preferences.update' => 'profiles.updatePreferences',
+        'subscriptionTopics.list' => 'profiles.subscriptionTopics',
         'profiles.telegramLink' => 'profiles.telegramLink',
         'profiles.viberLink' => 'profiles.viberLink',
         'products.upsert' => 'products.upsert',
