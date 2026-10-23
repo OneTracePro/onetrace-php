@@ -4760,7 +4760,7 @@
                         "string",
                         "null"
                       ],
-                      "description": "A corrected query to offer (“Did you mean …?”) when the typed one found products anyway."
+                      "description": "“Did you mean”: the corrected query when nothing was found or only some of the words matched (and nothing was found by meaning); null otherwise."
                     },
                     "learned": {
                       "type": "boolean",

@@ -19,7 +19,7 @@ final class Search extends Resource
      * catalog translations.
      *
      * The response also says how the query was understood: corrected — the results are for this corrected query
-     * (a typo), suggestion — "did you mean" when the query found results as typed; filters — the price, brand and
+     * (a typo), suggestion — "did you mean" when nothing was found or only some of the words matched; filters — the price, brand and
      * characteristics recognized in the text ("red dress under 50" → price_max, color), already applied; learned —
      * the order of the first results follows what visitors clicked and bought for this query; semantic — the results
      * include products found by meaning; redirect — the address of a search rule. correct: false — search exactly
