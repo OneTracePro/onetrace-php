@@ -172,6 +172,29 @@ final class RequesterTest extends TestCase
         self::assertCount(1, $transport->requests, '402 is not retried.');
     }
 
+    public function testSearchOverTheMonthlyLimitIsAPaymentRequiredExceptionWithoutRetries(): void
+    {
+        $transport = (new FakeTransport())->push(402, ['message' => 'The monthly search limit is spent', 'code' => 'quota_exceeded']);
+
+        try {
+            $this->client($transport)->search()->products('linen dress');
+            self::fail('An exception was expected.');
+        } catch (PaymentRequiredException $e) {
+            self::assertSame('quota_exceeded', $e->getReason());
+        }
+
+        self::assertCount(1, $transport->requests, 'The shop switches to its own search at once.');
+    }
+
+    public function testSearchSendsFlagsAsNumbersAndListsAsArrays(): void
+    {
+        $transport = (new FakeTransport())->push(200, ['items' => [], 'total' => 0]);
+        $this->client($transport)->search()->products('red dress under 50', ['correct' => false, 'ignore' => ['price'], 'brand' => 'Contoso', 'attr' => ['season' => 'winter']]);
+        parse_str((string) parse_url($transport->last()->getUrl(), PHP_URL_QUERY), $query);
+
+        self::assertSame(['q' => 'red dress under 50', 'correct' => '0', 'ignore' => ['price'], 'brand' => ['Contoso'], 'attr' => ['season' => 'winter']], $query);
+    }
+
     public function testRateLimitExceptionReadsRetryAfter(): void
     {
         $transport = (new FakeTransport())->push(429, ['message' => 'Slow down'], ['Retry-After' => '30']);

@@ -205,20 +205,35 @@ final class Requester
         $pairs = [];
 
         foreach ($query as $name => $value) {
-            if ($value === null) {
-                continue;
-            }
-
-            if (\is_array($value)) {
-                foreach ($value as $item) {
-                    $pairs[] = rawurlencode($name . '[]') . '=' . rawurlencode(self::scalar($item));
-                }
-            } else {
-                $pairs[] = rawurlencode($name) . '=' . rawurlencode(self::scalar($value));
-            }
+            self::pairs((string) $name, $value, $pairs);
         }
 
         return $pairs === [] ? $url : $url . '?' . implode('&', $pairs);
+    }
+
+    /**
+     * A list goes as name[]=…, a map as name[key]=… (attr[season]=winter, attr[rim_diameter][]=16).
+     *
+     * @param mixed $value
+     * @param list<string> $pairs
+     */
+    private static function pairs(string $name, $value, array &$pairs): void
+    {
+        if ($value === null) {
+            return;
+        }
+
+        if (!\is_array($value)) {
+            $pairs[] = rawurlencode($name) . '=' . rawurlencode(self::scalar($value));
+
+            return;
+        }
+
+        $list = $value === [] || array_keys($value) === range(0, \count($value) - 1);
+
+        foreach ($value as $key => $item) {
+            self::pairs($list ? $name . '[]' : $name . '[' . $key . ']', $item, $pairs);
+        }
     }
 
     /**

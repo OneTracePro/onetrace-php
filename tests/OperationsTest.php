@@ -41,6 +41,7 @@ final class OperationsTest extends TestCase
             'widgets.get' => static function (Client $c) { return $c->widgets()->get('abc123def456', ['item' => 'SKU-1']); },
             'search.products' => static function (Client $c) { return $c->search()->products('linen dress', ['brand' => 'Contoso', 'all' => true]); },
             'search.suggest' => static function (Client $c) { return $c->search()->suggest('lin'); },
+            'search.widget' => static function (Client $c) { return $c->search()->widget('de'); },
             'meta.openapi' => static function (Client $c) { return $c->openApi(); },
             'key.show' => static function (Client $c) { return $c->checkKey('write'); },
             'profiles.show' => static function (Client $c) { return $c->profiles()->get('email', 'anna@example.com'); },

@@ -2,6 +2,13 @@
 
 All notable changes are documented here. The project follows [Semantic Versioning](https://semver.org/).
 
+## 1.15.0 — 2026-10-23
+
+- `search()->widget()` — the search widget settings of the website (Site → Search): whether it is on, the add-to-cart address `cart_url` and texts in the visitor's language; a store shows `<div data-cdp-search-results>` on its search page when it is on.
+- `search()->products()`: `correct` (false — search exactly what was typed), `ignore` (what not to recognize in the text: price, brand, characteristic keys) and `attr` (characteristic filters); the response fields `corrected`, `suggestion`, `filters`, `learned`, `semantic` and `redirect` are documented. `suggest()` returns `redirect` and `corrected`.
+- `PaymentRequiredException::getReason()` — also `quota_exceeded` (the monthly search limit of the plan): search requests are not retried, show the search of your website.
+- Fixed: query parameters that are maps (`attr[season]=winter`) lost their keys.
+
 ## 1.14.0 — 2026-10-22
 
 - Subscription preferences (preference center): `profiles()->preferences()` — topics by channel, frequency and pause of marketing messages and a signed link to the preference center page; `profiles()->updatePreferences()` — change the given topics, frequency or pause, or unsubscribe from everything; `profiles()->subscriptionTopics()` — topics of the project with names in its languages.

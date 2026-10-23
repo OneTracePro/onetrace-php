@@ -4423,7 +4423,7 @@
         "tags": [
           "search"
         ],
-        "description": "Write key (tracker, shop plugins), ADR-079. Word forms of the project languages, typos and a query typed in the wrong keyboard layout are understood; a query without results is retried with any of its words (`relaxed`). With `anonymousId` the first results are reordered by the categories and brands the visitor looked at (`personalized`). Facets are counted over the whole query, before the category, brand and price filters.",
+        "description": "Write key (tracker, shop plugins), ADR-079. Word forms of the project languages, typos and a query typed in the wrong keyboard layout are understood; a query without results is retried with any of its words (`relaxed`). With `anonymousId` the first results are reordered by the categories and brands the visitor looked at (`personalized`). Facets are counted over the whole query, before the category, brand and price filters.\n\nEvery request (and every suggestion request) counts towards the monthly search requests of the plan.",
         "security": [
           {
             "writeKey": []
@@ -4571,6 +4571,28 @@
               "type": "string",
               "maxLength": 35
             }
+          },
+          {
+            "name": "correct",
+            "in": "query",
+            "description": "Correct typos of a query that finds nothing (default true); false searches exactly the typed text.",
+            "schema": {
+              "type": "boolean",
+              "default": true
+            }
+          },
+          {
+            "name": "ignore[]",
+            "in": "query",
+            "description": "What not to recognize in the query text: price, brand or a characteristic key (the visitor removed the chip of a recognized filter).",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "maxLength": 64
+              },
+              "maxItems": 20
+            }
           }
         ],
         "responses": {
@@ -4717,7 +4739,7 @@
                     },
                     "filters": {
                       "type": "object",
-                      "description": "Sizes and parameters recognized in the query text and applied as filters (“205/55 r16 winter” → tire_width, tire_profile, rim_diameter, season); empty when nothing was recognized or nothing matched them.",
+                      "description": "Filters recognized in the query text and applied: sizes and characteristics of the store industry (“205/55 r16 winter” → tire_width, tire_profile, rim_diameter, season), catalog values of text characteristics (“red dress” → color), price_min / price_max (“under 3000”, “from 1000 to 2000” in the 10 interface languages) and brand (a catalog brand in the text). Empty when nothing was recognized or nothing matched them (then the text is searched as typed).",
                       "additionalProperties": {
                         "type": [
                           "string",
@@ -4725,6 +4747,28 @@
                           "boolean"
                         ]
                       }
+                    },
+                    "corrected": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "description": "The query with corrected typos when the typed one found nothing (or only loosely) and the corrected one found products: the items are its results."
+                    },
+                    "suggestion": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "description": "A corrected query to offer (“Did you mean …?”) when the typed one found products anyway."
+                    },
+                    "learned": {
+                      "type": "boolean",
+                      "description": "The order of the first results takes into account which products visitors clicked and bought for this query (learned daily)."
+                    },
+                    "semantic": {
+                      "type": "boolean",
+                      "description": "The results include products found by meaning (vector search): for a descriptive query, or when the words of the query found nothing or only some of them matched."
                     }
                   }
                 }
@@ -4735,7 +4779,26 @@
             "$ref": "#/components/responses/Unauthorized"
           },
           "402": {
-            "description": "Product search is not in the plan of the project (code feature_unavailable)"
+            "description": "Product search is not in the plan (feature_unavailable) or the monthly search requests are used up beyond the 10% margin (quota_exceeded): fall back to the website's own search.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    },
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "feature_unavailable",
+                        "quota_exceeded"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
           },
           "422": {
             "$ref": "#/components/responses/ValidationError"
@@ -4753,7 +4816,7 @@
         "tags": [
           "search"
         ],
-        "description": "Write key, ADR-079. Products by the beginning of words, categories by name, popular queries of the website (`search` events of the last 30 days). An empty query returns only the popular queries.",
+        "description": "Write key, ADR-079. Products by the beginning of words, categories by name, popular queries of the website (`search` events of the last 30 days). An empty query returns only the popular queries.\n\n`widget=1` is used by the search layer of the tracker: the answer also has `brands` and `pages` (website pages of the knowledge base), and an empty `q` returns trending queries and products for the visitor (`anonymousId`; personal recommendations, popular products without history; with the recommendations feature of the plan).",
         "security": [
           {
             "writeKey": []
@@ -4799,6 +4862,24 @@
             "schema": {
               "type": "string",
               "maxLength": 35
+            }
+          },
+          {
+            "name": "widget",
+            "in": "query",
+            "description": "Answer for the search layer of the tracker: brands, website pages, and for an empty query trending queries and products for the visitor.",
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
+          },
+          {
+            "name": "anonymousId",
+            "in": "query",
+            "description": "Visitor of the tracker: products for an empty query with widget=1.",
+            "schema": {
+              "type": "string",
+              "maxLength": 255
             }
           }
         ],
@@ -4855,6 +4936,41 @@
                       ],
                       "format": "uri",
                       "description": "Redirect rule of the query (Site → Search): the page to open instead of the results, or null."
+                    },
+                    "brands": {
+                      "type": "array",
+                      "description": "With widget=1: brands of products in stock starting with the query.",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "name": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    },
+                    "pages": {
+                      "type": "array",
+                      "description": "With widget=1: website pages of the knowledge base matching the query (3 characters or more).",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "title": {
+                            "type": "string"
+                          },
+                          "url": {
+                            "type": "string",
+                            "format": "uri"
+                          }
+                        }
+                      }
+                    },
+                    "corrected": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "description": "The corrected query when products were found only for it."
                     }
                   }
                 }
@@ -4865,13 +4981,158 @@
             "$ref": "#/components/responses/Unauthorized"
           },
           "402": {
-            "description": "Product search is not in the plan of the project (code feature_unavailable)"
+            "description": "Product search is not in the plan (feature_unavailable) or the monthly search requests are used up beyond the 10% margin (quota_exceeded): fall back to the website's own search.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    },
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "feature_unavailable",
+                        "quota_exceeded"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
           },
           "422": {
             "$ref": "#/components/responses/ValidationError"
           },
           "429": {
             "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/search/widget": {
+      "get": {
+        "operationId": "search.widget",
+        "summary": "Website search layer settings",
+        "description": "Used by the tracker and by store plugins: whether the search widget is on, the CSS selector of the website search fields it attaches to besides `input[data-cdp-search]`, the results, category and add-to-cart addresses (`{query}`, `{id}`), the blocks to show, the look and texts in the visitor language. A store whose search page shows `<div data-cdp-search-results data-cart-url=\"…\">` instead of its own results checks `enabled` first.",
+        "tags": [
+          "search"
+        ],
+        "security": [
+          {
+            "writeKey": []
+          },
+          {
+            "secretKey": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "language",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 35
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Settings; only enabled: false when the search layer is off",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "enabled": {
+                      "type": "boolean"
+                    },
+                    "selector": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "results_url": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "description": "Results page with {query}; null — the form of the search field."
+                    },
+                    "category_url": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "description": "Category page with {id}; null — categories are not shown."
+                    },
+                    "cart_url": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "description": "Add-to-cart address with {id} — the catalog product id; the “Add to cart” button of the results widget sends POST to it (quantity, form_key from the cookie if present) and expects JSON: {\"ok\": true} or {\"redirect\": \"…\"} for a product that needs options. null — no button unless the page container sets data-cart-url."
+                    },
+                    "sections": {
+                      "type": "object",
+                      "additionalProperties": {
+                        "type": "boolean"
+                      },
+                      "properties": {
+                        "history": {
+                          "type": "boolean"
+                        },
+                        "trending": {
+                          "type": "boolean"
+                        },
+                        "products": {
+                          "type": "boolean"
+                        },
+                        "categories": {
+                          "type": "boolean"
+                        },
+                        "brands": {
+                          "type": "boolean"
+                        },
+                        "pages": {
+                          "type": "boolean"
+                        }
+                      }
+                    },
+                    "texts": {
+                      "type": "object",
+                      "additionalProperties": {
+                        "type": "string"
+                      }
+                    },
+                    "accent": {
+                      "type": "string",
+                      "description": "Accent color, #rrggbb."
+                    },
+                    "radius": {
+                      "type": "integer"
+                    },
+                    "columns": {
+                      "type": "integer",
+                      "description": "Columns of the results grid; 0 — by the width."
+                    },
+                    "ratio": {
+                      "type": "string",
+                      "enum": [
+                        "square",
+                        "portrait"
+                      ]
+                    },
+                    "voice": {
+                      "type": "boolean"
+                    }
+                  }
+                }
+              }
+            }
           }
         }
       }
@@ -12506,6 +12767,11 @@
               "properties": {
                 "key": {
                   "type": "string",
+                  "example": "email"
+                },
+                "name": {
+                  "type": "string",
+                  "description": "Name of the channel in the requested language, lower case as inside a sentence.",
                   "example": "email"
                 },
                 "blocked": {

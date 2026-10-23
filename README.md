@@ -171,12 +171,18 @@ $onetrace->recommendations()->get('popular', ['language' => 'en']);
 $result = $onetrace->search()->products('linen dress', [
     'per_page' => 24, 'sort' => 'relevance', 'brand' => ['Contoso'], 'anonymousId' => $visitorId,
 ]);
-// $result['items'], $result['total'], $result['facets'] (categories, brands, price), $result['relaxed'], $result['personalized']
+// $result['items'], $result['total'], $result['facets'] (categories, brands, price, attributes), $result['relaxed'], $result['personalized']
+// $result['corrected'] — results for the corrected query, $result['suggestion'] — "did you mean"
+// $result['filters'] — price, brand and characteristics recognized in the text and applied ("red dress under 50")
+// $result['learned'], $result['semantic'] — order learned from clicks and purchases, products found by meaning
+
+$onetrace->search()->products('red dress under 50', ['correct' => false, 'ignore' => ['price'], 'attr' => ['season' => 'winter']]);
 
 $hints = $onetrace->search()->suggest('lin'); // products, categories, popular queries
+$widget = $onetrace->search()->widget('de'); // search widget settings of Site → Search: enabled, cart_url, texts
 ```
 
-Word forms, typos and a query typed in the wrong keyboard layout are understood; with `anonymousId` (the tracker visitor id) the first results follow the visitor's interests. The plan of the project must include product search. A shop that renders the results page itself sends the `search` event once per query: `(new Messages('myshop', $url))->search($customer, $query, $result['total'])`.
+Word forms, typos and a query typed in the wrong keyboard layout are understood; with `anonymousId` (the tracker visitor id) the first results follow the visitor's interests. The plan of the project must include product search, and search requests count towards its monthly limit: over it the API answers 402 and `PaymentRequiredException::getReason()` is `quota_exceeded` — show the search of your website. With the search widget on, a results page can be just `<div data-cdp-search-results data-cart-url="/cart/add/{id}"></div>`: the tracker draws the results, facets and an "Add to cart" button that posts to your address and expects `{"ok": true}` or `{"redirect": "…"}`. A shop that renders the results page itself sends the `search` event once per query: `(new Messages('myshop', $url))->search($customer, $query, $result['total'])`.
 
 ## Segments, journeys and campaigns
 
@@ -442,7 +448,7 @@ All exceptions implement `OneTrace\Exception\OneTraceException`.
 |---|---|
 | `ValidationException` (422) | invalid request; `getErrors()` returns messages by field |
 | `AuthenticationException` (401) | missing, invalid or revoked key |
-| `PaymentRequiredException` (402) | the feature is not in the plan (`getReason()` = `feature_unavailable`, `getFeature()`) or the project is read-only after the trial or the payment grace period (`subscription_expired`) |
+| `PaymentRequiredException` (402) | the feature is not in the plan (`getReason()` = `feature_unavailable`, `getFeature()`) the project is read-only after the trial or the payment grace period (`subscription_expired`), or a monthly limit of the plan is spent (`quota_exceeded`, e.g. search requests) |
 | `PermissionException` (403) | the key lacks a permission, the site domain is not allowed or the account is suspended |
 | `NotFoundException` (404) | not found in the key's project |
 | `ConflictException` (409) | the current state does not allow the action |
