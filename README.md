@@ -150,15 +150,15 @@ $recommendations = $onetrace->recommendations()->get('viewed_with', ['item' => '
 // personal, popular, trending, viewed_with, bought_with, similar, recently_viewed
 ```
 
-Product ids are the same ids the website sends in events (`product_id`). Up to 1000 products per call.
+Product ids are the same ids the website sends in events (`product_id`). Up to 1000 products per call. The description (HTML or text, sent as text up to 5000 characters) is what OneTrace AI answers shoppers' questions from on the product page («Ask AI», `<div data-cdp-ask data-product-id="SKU-1"></div>` with the tracker).
 
 Translations for other languages of the store go with the product and the category; recommendations, widgets and search with `language` return names and links in that translation:
 
 ```php
 use OneTrace\Commerce\CatalogItem;
 
-$item = CatalogItem::make('SKU-1', 'Кроссовки', 'https://shop.example/sku-1', null, 4990, 'EUR', true, ['shoes'], null, null, [], 12); // 12 in stock
-$item = CatalogItem::translate($item, 'en', 'Sneakers', 'https://shop.example/en/sku-1');
+$item = CatalogItem::make('SKU-1', 'Кроссовки', 'https://shop.example/sku-1', null, 4990, 'EUR', true, ['shoes'], null, null, [], 12, '<p>Лёгкие беговые кроссовки</p>'); // 12 in stock
+$item = CatalogItem::translate($item, 'en', 'Sneakers', 'https://shop.example/en/sku-1', [], '<p>Light running sneakers</p>');
 $category = CatalogItem::translateCategory(CatalogItem::category('shoes', 'Обувь'), 'en', 'Shoes');
 $onetrace->products()->upsert([$item], [$category]);
 

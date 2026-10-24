@@ -189,6 +189,17 @@ final class CommerceTest extends TestCase
         self::assertSame(['id' => '6', 'name' => 'Boots', 'parent_id' => '5'], CatalogItem::category(6, 'Boots', 5));
     }
 
+    public function testSendsTheDescriptionAsTextForTheAiAnswers(): void
+    {
+        $item = CatalogItem::make(1, 'Tyre', null, null, 98.0, 'EUR', true, [], null, null, [], null, '<p>Winter tyre&nbsp;for <b>ice</b>.</p><ul><li>Studded</li><li>XL</li></ul>');
+        $long = CatalogItem::make(1, 'Tyre', null, null, null, 'EUR', true, [], null, null, [], null, str_repeat('é', CatalogItem::DESCRIPTION_MAX + 10));
+
+        self::assertSame("Winter tyre for ice.\n• Studded\n• XL", $item['description']);
+        self::assertSame(CatalogItem::DESCRIPTION_MAX, mb_strlen($long['description']));
+        self::assertArrayNotHasKey('description', CatalogItem::make(1, 'Tyre', null, null, null, 'EUR', true, [], null, null, [], null, ' <br> '));
+        self::assertSame(['de' => ['name' => 'Reifen', 'description' => 'Winterreifen']], CatalogItem::translate($item, 'de', 'Reifen', null, [], '<p>Winterreifen</p>')['translations']);
+    }
+
     public function testTranslatesProductsAndCategoriesForOtherLanguagesOfTheStore(): void
     {
         $item = CatalogItem::translate(CatalogItem::make(17, 'Кроссовки', 'https://shop.example.com/p/17', null, 49.95, 'EUR', true), 'en_US', ' Sneakers ', 'https://shop.example.com/en/p/17', ['color' => 'black', 'size' => null]);

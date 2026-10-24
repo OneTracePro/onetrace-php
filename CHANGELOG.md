@@ -2,6 +2,11 @@
 
 All notable changes are documented here. The project follows [Semantic Versioning](https://semver.org/).
 
+## 1.16.0 — 2026-10-24
+
+- `CatalogItem::make()` takes the product `description` (HTML or text, last argument) and `CatalogItem::translate()` its translation: OneTrace AI answers shoppers' questions about the product on its page from the description, attributes and the shop knowledge base («Ask AI»). `CatalogItem::description()` turns HTML into text (paragraphs and list items on their own lines) and keeps at most 5000 characters.
+- Conversations: `product_id` of the conversation and of a message — the product the customer asked about from the website.
+
 ## 1.15.0 — 2026-10-23
 
 - `search()->widget()` — the search widget settings of the website (Site → Search): whether it is on, the add-to-cart address `cart_url` and texts in the visitor's language; a store shows `<div data-cdp-search-results>` on its search page when it is on.

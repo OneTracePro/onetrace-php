@@ -4816,7 +4816,7 @@
         "tags": [
           "search"
         ],
-        "description": "Write key, ADR-079. Products by the beginning of words, categories by name, popular queries of the website (`search` events of the last 30 days). An empty query returns only the popular queries.\n\n`widget=1` is used by the search layer of the tracker: the answer also has `brands` and `pages` (website pages of the knowledge base), and an empty `q` returns trending queries and products for the visitor (`anonymousId`; personal recommendations, popular products without history; with the recommendations feature of the plan).",
+        "description": "Write key, ADR-079. Products by the beginning of words, categories by name, popular queries of the website (`search` events of the last 30 days). An empty query returns only the popular queries.\n\n`widget=1` is used by the search layer of the tracker: the answer also has `brands` and `pages` (website pages of the knowledge base), and an empty `q` returns trending queries and products for the visitor (`anonymousId`; personal recommendations, popular products without history; without the recommendations feature of the plan or computed recommendations — popular catalog products in stock).",
         "security": [
           {
             "writeKey": []
@@ -5015,7 +5015,7 @@
       "get": {
         "operationId": "search.widget",
         "summary": "Website search layer settings",
-        "description": "Used by the tracker and by store plugins: whether the search widget is on, the CSS selector of the website search fields it attaches to besides `input[data-cdp-search]`, the results, category and add-to-cart addresses (`{query}`, `{id}`), the blocks to show, the look and texts in the visitor language. A store whose search page shows `<div data-cdp-search-results data-cart-url=\"…\">` instead of its own results checks `enabled` first.",
+        "description": "Used by the tracker and by store plugins: whether the search widget is on, the CSS selector of the website search fields it attaches to besides `input[data-cdp-search]`, the results, category and add-to-cart addresses (`{query}`, `{id}`), the blocks to show, the look and texts in the visitor language, and the empty field (`blank`): the store's own queries and banner in the visitor language. A store whose search page shows `<div data-cdp-search-results data-cart-url=\"…\">` instead of its own results checks `enabled` first.",
         "tags": [
           "search"
         ],
@@ -5128,6 +5128,41 @@
                     },
                     "voice": {
                       "type": "boolean"
+                    },
+                    "blank": {
+                      "type": "object",
+                      "description": "Empty search field in the visitor language (the project language closest to it, otherwise the default one): own queries shown first among trending ones (even with the trending block off) and a banner above the products.",
+                      "properties": {
+                        "queries": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          },
+                          "maxItems": 8
+                        },
+                        "banner": {
+                          "type": [
+                            "object",
+                            "null"
+                          ],
+                          "properties": {
+                            "image": {
+                              "type": "string",
+                              "description": "https image address."
+                            },
+                            "url": {
+                              "type": [
+                                "string",
+                                "null"
+                              ],
+                              "description": "Website address or path; null — the banner is not a link."
+                            },
+                            "alt": {
+                              "type": "string"
+                            }
+                          }
+                        }
+                      }
                     }
                   }
                 }
@@ -8434,6 +8469,346 @@
           }
         }
       }
+    },
+    "/products/questions": {
+      "post": {
+        "operationId": "products.questions.ask",
+        "summary": "Ask AI about a product",
+        "description": "Answers a shopper's question about one product from its card (name, description, characteristics, industry attributes, price, stock) and the shop knowledge base, in the language of the question (ADR-132). Charged to the project balance by tokens like AI in chat; the same question about an unchanged product in the same language is answered from a cache for a day without charge. Limited per visitor (5 a minute, 50 a day). Records the event `$product_question` for the visitor.\n\nUsed by the product question widget of the tracker; not part of the SDKs.",
+        "tags": [
+          "products"
+        ],
+        "security": [
+          {
+            "writeKey": []
+          },
+          {
+            "secretKey": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "product_id",
+                  "question",
+                  "anonymousId"
+                ],
+                "properties": {
+                  "product_id": {
+                    "type": "string",
+                    "maxLength": 128,
+                    "description": "Product id in the catalog (id from the feed or the products API)"
+                  },
+                  "question": {
+                    "type": "string",
+                    "maxLength": 500
+                  },
+                  "anonymousId": {
+                    "type": "string",
+                    "maxLength": 255
+                  },
+                  "userId": {
+                    "type": "string",
+                    "maxLength": 255
+                  },
+                  "language": {
+                    "type": "string",
+                    "maxLength": 35,
+                    "description": "Language of the page (BCP 47); the answer follows the language of the question"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Answer",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "answer": {
+                      "type": "string"
+                    },
+                    "answered": {
+                      "type": "boolean",
+                      "description": "false — the product card and the shop knowledge do not answer the question; the answer says so and suggests asking the staff"
+                    },
+                    "sources": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "title": {
+                            "type": "string"
+                          },
+                          "url": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "AI is not available for the project: no paid plan, no balance, spend limit reached (`reason`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    },
+                    "reason": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such product",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    },
+                    "reason": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many questions from this visitor",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    },
+                    "reason": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "The AI model did not answer",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    },
+                    "reason": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "AI is not configured on the platform",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    },
+                    "reason": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x-internal": true
+      }
+    },
+    "/products/questions/suggested": {
+      "get": {
+        "operationId": "products.questions.suggested",
+        "summary": "Suggested questions about a product",
+        "description": "Three short typical shopper questions for products of the category, in the language of the page (ADR-132). Generated by AI once per category and language and kept for 30 days; empty when AI is not available.\n\nUsed by the product question widget of the tracker; not part of the SDKs.",
+        "tags": [
+          "products"
+        ],
+        "security": [
+          {
+            "writeKey": []
+          },
+          {
+            "secretKey": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "product_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "language",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "maxLength": 35
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Questions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "questions": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such product",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    },
+                    "reason": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x-internal": true
+      }
+    },
+    "/products/questions/widget": {
+      "get": {
+        "operationId": "products.questions.widget",
+        "summary": "Product question widget settings",
+        "description": "Settings of the product question widget for the tracker (ADR-132): mode, suggestions, appearance and texts in the visitor's language. `enabled: false` when the widget is off in the site settings, AI is not configured or not paid for — the tracker then does not load the widget. Cached for 5 minutes when off, 1 minute when on.\n\nUsed by the tracker; not part of the SDKs.",
+        "tags": [
+          "products"
+        ],
+        "security": [
+          {
+            "writeKey": []
+          },
+          {
+            "secretKey": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "language",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "maxLength": 35
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Widget settings",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "enabled"
+                  ],
+                  "properties": {
+                    "enabled": {
+                      "type": "boolean"
+                    },
+                    "mode": {
+                      "type": "string",
+                      "enum": [
+                        "block",
+                        "chat"
+                      ]
+                    },
+                    "chat": {
+                      "type": "boolean",
+                      "description": "Online chat is on: the block offers to ask the staff"
+                    },
+                    "suggestions": {
+                      "type": "boolean"
+                    },
+                    "accent": {
+                      "type": "string",
+                      "example": "#4f46e5"
+                    },
+                    "radius": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 24
+                    },
+                    "texts": {
+                      "type": "object",
+                      "additionalProperties": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x-internal": true
+      }
     }
   },
   "components": {
@@ -10037,6 +10412,11 @@
             "type": "string",
             "maxLength": 200
           },
+          "description": {
+            "type": "string",
+            "maxLength": 65535,
+            "description": "Product description, plain text or HTML (ADR-132). HTML is turned into text and the result is cut to 5000 characters; the AI answers shoppers' questions about the product from it."
+          },
           "params": {
             "type": "object",
             "additionalProperties": {
@@ -10065,6 +10445,10 @@
                 },
                 "params": {
                   "type": "object"
+                },
+                "description": {
+                  "type": "string",
+                  "maxLength": 65535
                 }
               }
             }
@@ -12048,6 +12432,13 @@
               "null"
             ]
           },
+          "product_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Last product the customer asked about from the site (product question widget or a product page), id in the catalog"
+          },
           "rating": {
             "type": [
               "integer",
@@ -12157,6 +12548,13 @@
               "reopened",
               null
             ]
+          },
+          "product_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Product the customer asked about with this message, id in the catalog"
           },
           "status": {
             "type": [
