@@ -23,6 +23,8 @@ final class Requester
 {
     public const AUTH_WRITE = 'write';
     public const AUTH_SECRET = 'secret';
+    /** The secret key, or the write key when there is no secret key: events sent by a server. */
+    public const AUTH_SERVER = 'server';
 
     private const MAX_RETRY_AFTER = 60.0;
 
@@ -31,6 +33,8 @@ final class Requester
     private ?string $writeKey;
 
     private ?string $secretKey;
+
+    private ?string $identityKey;
 
     private Transport $transport;
 
@@ -57,11 +61,13 @@ final class Requester
         float $retryDelay,
         string $userAgent,
         ?callable $sleep = null,
-        string $language = 'en'
+        string $language = 'en',
+        ?string $identityKey = null
     ) {
         $this->baseUrl = $baseUrl;
         $this->writeKey = $writeKey;
         $this->secretKey = $secretKey;
+        $this->identityKey = $identityKey;
         $this->transport = $transport;
         $this->maxRetries = max(0, $maxRetries);
         $this->retryDelay = max(0.0, $retryDelay);
@@ -79,7 +85,8 @@ final class Requester
      *     auth?: string,
      *     idempotent?: bool,
      *     idempotency_key?: string|null,
-     * } $options auth: AUTH_WRITE accepts either key (write key preferred), AUTH_SECRET needs the secret key;
+     * } $options auth: AUTH_WRITE accepts either key (write key preferred), AUTH_SERVER — either key (secret key
+     *             preferred), AUTH_SECRET needs the secret key;
      *             idempotent: send an Idempotency-Key header (generated unless given)
      *
      * @return array<string, mixed> decoded JSON body; an empty array for 204
@@ -127,6 +134,22 @@ final class Requester
     public function baseUrl(): string
     {
         return $this->baseUrl;
+    }
+
+    /**
+     * Whether a request with this auth goes with the write key.
+     */
+    public function usesWriteKey(string $auth): bool
+    {
+        return $this->writeKey !== null && ($auth === self::AUTH_WRITE || $this->secretKey === null);
+    }
+
+    /**
+     * The signature of a user id: HMAC-SHA256 with the identity key, hex; null without the identity key.
+     */
+    public function userHash(string $userId): ?string
+    {
+        return $this->identityKey === null ? null : hash_hmac('sha256', $userId, $this->identityKey);
     }
 
     private function sendWithRetries(Request $request): Response
@@ -191,7 +214,11 @@ final class Requester
             return $this->secretKey;
         }
 
-        throw new ConfigurationException($auth === self::AUTH_WRITE
+        if ($auth === self::AUTH_SERVER && $this->writeKey !== null) {
+            return $this->writeKey;
+        }
+
+        throw new ConfigurationException($auth !== self::AUTH_SECRET
             ? 'Pass "write_key" or "secret_key" to the client to send events.'
             : 'This method needs a secret key: pass "secret_key" to the client.');
     }

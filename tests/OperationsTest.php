@@ -224,8 +224,8 @@ final class OperationsTest extends TestCase
         self::assertSame($method, $request->getMethod());
         self::assertMatchesRegularExpression($pattern, $request->getUrl());
 
-        // Ingestion accepts the write key: the client prefers it; everything else needs the secret key.
-        $expectedKey = \in_array('writeKey', $security, true) ? 'cdp_wk_test' : 'cdp_sk_test';
+        // Operations that accept the write key prefer it, except ingestion: events of a server go with the secret key.
+        $expectedKey = \in_array('writeKey', $security, true) && strpos($operationId, 'ingest.') !== 0 ? 'cdp_wk_test' : 'cdp_sk_test';
 
         if ($security !== []) {
             self::assertSame('Bearer ' . $expectedKey, $request->getHeader('Authorization'));

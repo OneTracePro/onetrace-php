@@ -35,17 +35,19 @@ use Psr\Http\Message\StreamFactoryInterface;
  * Client of the OneTrace.pro public API v1.
  *
  *     $client = new OneTrace\Client('https://cdp.onetrace.pro', [
- *         'write_key' => getenv('ONETRACE_WRITE_KEY'),   // events
- *         'secret_key' => getenv('ONETRACE_SECRET_KEY'), // everything else
+ *         'write_key' => getenv('ONETRACE_WRITE_KEY'),       // recommendations, widgets, search
+ *         'secret_key' => getenv('ONETRACE_SECRET_KEY'),     // events and everything else
+ *         'identity_key' => getenv('ONETRACE_IDENTITY_KEY'), // signs user ids for the tracker
  *     ]);
  *     $client->events()->track(['userId' => '42', 'event' => 'order_completed', 'properties' => ['amount' => 9980]]);
+ *     $hash = $client->userHash('42'); // cdp.identify('42', {}, { userHash: hash }) on the page
  *
  * The address is the platform domain of your account (a white-label brand has its own); "/api/v1" is added
  * when missing.
  */
 final class Client
 {
-    public const VERSION = '1.16.0';
+    public const VERSION = '1.17.0';
 
     /**
      * API operations (operationId of the OpenAPI specification) and the methods that call them.
@@ -173,6 +175,7 @@ final class Client
      * @param array{
      *     write_key?: string|null,
      *     secret_key?: string|null,
+     *     identity_key?: string|null,
      *     timeout?: float,
      *     connect_timeout?: float,
      *     max_retries?: int,
@@ -185,8 +188,11 @@ final class Client
      *     language?: string,
      *     sleep?: callable(float): void,
      * } $options
-     *   - write_key: cdp_wk_… for events, recommendations, widgets, product search and Web Push;
-     *   - secret_key: cdp_sk_… for everything (never expose it to browsers);
+     *   - write_key: cdp_wk_… for recommendations, widgets, product search and Web Push, events when there is no
+     *     secret key;
+     *   - secret_key: cdp_sk_… for everything, events included (never expose it to browsers);
+     *   - identity_key: cdp_ik_…, the identity key of the project (Website → Connection → Server) for userHash()
+     *     and signed user ids of events sent with the write key (never expose it to browsers);
      *   - timeout / connect_timeout: seconds for the built-in cURL transport (10 and 5 by default);
      *   - max_retries: retries of network errors, 429, 5xx (3 by default, 0 disables);
      *   - retry_delay: first backoff delay in seconds, doubled on each retry (0.5 by default);
@@ -214,6 +220,8 @@ final class Client
             throw new \InvalidArgumentException('Pass "write_key", "secret_key" or both.');
         }
 
+        $identityKey = self::key($options['identity_key'] ?? null, 'The identity key must be a string.');
+
         $userAgent = sprintf('onetrace-php/%s PHP/%s', self::VERSION, PHP_VERSION);
 
         if (isset($options['user_agent']) && $options['user_agent'] !== '') {
@@ -229,7 +237,8 @@ final class Client
             (float) ($options['retry_delay'] ?? 0.5),
             $userAgent,
             $options['sleep'] ?? null,
-            isset($options['language']) && $options['language'] !== '' ? $options['language'] : 'en'
+            isset($options['language']) && $options['language'] !== '' ? $options['language'] : 'en',
+            $identityKey
         );
     }
 
@@ -390,6 +399,21 @@ final class Client
     }
 
     /**
+     * The signature of a signed-in user's id for the tracker: HMAC-SHA256 of the id with the identity key, hex.
+     * Print it into the page — cdp.identify(userId, traits, { userHash }) — so that the platform trusts the user id
+     * of the browser (required when the project turns on "Require signature"). Null when the client has no
+     * "identity_key".
+     *
+     * @param string|int $userId
+     */
+    public function userHash($userId): ?string
+    {
+        $userId = (string) $userId;
+
+        return $userId === '' ? null : $this->requester->userHash($userId);
+    }
+
+    /**
      * The OpenAPI specification of the platform's API.
      *
      * @return array<string, mixed>
@@ -469,16 +493,18 @@ final class Client
     /**
      * @param mixed $key
      */
-    private static function key($key): ?string
+    private static function key($key, string $error = 'API keys must be strings.'): ?string
     {
         if ($key === null || $key === false || $key === '') {
             return null;
         }
 
         if (!\is_string($key)) {
-            throw new \InvalidArgumentException('API keys must be strings.');
+            throw new \InvalidArgumentException($error);
         }
 
-        return trim($key);
+        $key = trim($key);
+
+        return $key === '' ? null : $key;
     }
 }

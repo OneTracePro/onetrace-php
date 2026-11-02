@@ -71,6 +71,65 @@ final class ClientTest extends TestCase
         self::assertSame('Bearer cdp_sk_x', $transport->last()->getHeader('Authorization'));
     }
 
+    public function testEventsPreferTheSecretKeyWithoutSigning(): void
+    {
+        $transport = new FakeTransport();
+        $client = new Client('https://cdp.onetrace.pro', ['write_key' => 'cdp_wk_x', 'secret_key' => 'cdp_sk_x', 'identity_key' => 'cdp_ik_test', 'transport' => $transport]);
+
+        $client->events()->identify(['userId' => 42, 'traits' => ['email' => 'anna@example.com']]);
+
+        self::assertSame('Bearer cdp_sk_x', $transport->last()->getHeader('Authorization'));
+        self::assertArrayNotHasKey('userHash', $transport->lastJson());
+
+        $client->recommendations()->get('popular');
+        self::assertSame('Bearer cdp_wk_x', $transport->last()->getHeader('Authorization'));
+    }
+
+    /**
+     * The same HMAC as IdentityVerification::hash() of the platform: hash_hmac('sha256', $userId, $key).
+     */
+    public function testSignsUserIds(): void
+    {
+        $client = new Client('https://cdp.onetrace.pro', ['write_key' => 'cdp_wk_x', 'identity_key' => ' cdp_ik_test ', 'transport' => new FakeTransport()]);
+
+        self::assertSame('e3cbe19990e207883f093a7292576b74f55c9d625d2dcfa46ac4999df35607c9', $client->userHash('42'));
+        self::assertSame($client->userHash('42'), $client->userHash(42));
+        self::assertNull($client->userHash(''));
+        self::assertNull((new Client('https://cdp.onetrace.pro', ['write_key' => 'cdp_wk_x', 'identity_key' => '']))->userHash('42'));
+    }
+
+    public function testSignsEventsAndSubscriptionsSentWithTheWriteKey(): void
+    {
+        $transport = (new FakeTransport())->push(202)->push(202)->push(201);
+        $client = new Client('https://cdp.onetrace.pro', ['write_key' => 'cdp_wk_x', 'identity_key' => 'cdp_ik_test', 'transport' => $transport]);
+        $hash = 'e3cbe19990e207883f093a7292576b74f55c9d625d2dcfa46ac4999df35607c9';
+
+        $client->events()->track(['userId' => 42, 'event' => 'x']);
+        self::assertSame('Bearer cdp_wk_x', $transport->last()->getHeader('Authorization'));
+        self::assertSame($hash, $transport->lastJson()['userHash']);
+
+        $client->events()->batch([
+            ['type' => 'alias', 'userId' => '42', 'previousId' => 'old'],
+            ['type' => 'page', 'anonymousId' => 'a-1', 'name' => 'Home'],
+            ['type' => 'identify', 'userId' => '7', 'userHash' => 'given'],
+        ]);
+        $batch = $transport->lastJson()['batch'];
+        self::assertSame($hash, $batch[0]['userHash']);
+        self::assertArrayNotHasKey('userHash', $batch[1]);
+        self::assertSame('given', $batch[2]['userHash']);
+
+        $client->push()->subscribe(['endpoint' => 'https://fcm.googleapis.com/fcm/send/x'], ['userId' => '42', 'anonymousId' => 'a-1']);
+        self::assertSame($hash, $transport->lastJson()['userHash']);
+    }
+
+    public function testRejectsANonStringIdentityKey(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('identity key');
+
+        new Client('https://cdp.onetrace.pro', ['write_key' => 'cdp_wk_x', 'identity_key' => 42]);
+    }
+
     public function testSendsTheUserAgentAndJsonHeaders(): void
     {
         $transport = new FakeTransport();

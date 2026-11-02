@@ -11,7 +11,10 @@ use OneTrace\Http\Requester;
 use OneTrace\Support\Uuid;
 
 /**
- * Event ingestion: track, identify, page, alias and batches. Works with a write key or a secret key.
+ * Event ingestion: track, identify, page, alias and batches. Works with a secret key or a write key; the secret key
+ * is used when both are given (events of the write key do not award loyalty points, and their userId is dropped when
+ * the project requires signed user ids). With only the write key, messages with a userId get its "userHash"
+ * signature from the client's identity key.
  *
  * Each message gets a messageId (repeats with the same id within 24 hours are dropped by the server, so retries
  * are safe), a timestamp and context.library unless they are given. Responses are {"accepted": n, "duplicates": n};
@@ -127,7 +130,7 @@ final class Events extends Resource
     {
         $result = ['accepted' => 0, 'duplicates' => 0];
 
-        foreach (self::chunks($messages) as $chunk) {
+        foreach (self::chunks($this->sign($messages)) as $chunk) {
             $response = $this->requester->request('POST', '/batch', ['auth' => self::auth($chunk), 'json' => ['batch' => $chunk]]);
             $result['accepted'] += self::count($response['accepted'] ?? 0);
             $result['duplicates'] += self::count($response['duplicates'] ?? 0);
@@ -200,11 +203,11 @@ final class Events extends Resource
      */
     private function send(string $type, array $message): array
     {
-        return $this->requester->request('POST', '/' . $type, ['auth' => self::auth([$message]), 'json' => self::prepare($type, $message)]);
+        return $this->requester->request('POST', '/' . $type, ['auth' => self::auth([$message]), 'json' => $this->sign([self::prepare($type, $message)])[0]]);
     }
 
     /**
-     * Consents in identify are accepted only with the secret key; other messages prefer the write key.
+     * Consents in identify are accepted only with the secret key; other messages prefer it too.
      *
      * @param array<array<string, mixed>> $messages
      */
@@ -216,7 +219,37 @@ final class Events extends Resource
             }
         }
 
-        return Requester::AUTH_WRITE;
+        return Requester::AUTH_SERVER;
+    }
+
+    /**
+     * Adds "userHash" to messages with a userId when they go with the write key and the identity key is set.
+     *
+     * @param list<array<string, mixed>> $messages
+     *
+     * @return list<array<string, mixed>>
+     */
+    private function sign(array $messages): array
+    {
+        if (!$this->requester->usesWriteKey(Requester::AUTH_SERVER)) {
+            return $messages;
+        }
+
+        foreach ($messages as $index => $message) {
+            $userId = $message['userId'] ?? null;
+
+            if ((\is_string($userId) || \is_int($userId)) && (string) $userId !== '' && !isset($message['userHash'])) {
+                $hash = $this->requester->userHash((string) $userId);
+
+                if ($hash === null) {
+                    return $messages;
+                }
+
+                $messages[$index]['userHash'] = $hash;
+            }
+        }
+
+        return $messages;
     }
 
     /**

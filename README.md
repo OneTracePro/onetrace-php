@@ -22,8 +22,9 @@ composer require onetracepro/onetrace-php
 use OneTrace\Client;
 
 $onetrace = new Client('https://cdp.onetrace.pro', [
-    'write_key' => getenv('ONETRACE_WRITE_KEY'),   // cdp_wk_…: events, recommendations
-    'secret_key' => getenv('ONETRACE_SECRET_KEY'), // cdp_sk_…: everything else, server only
+    'write_key' => getenv('ONETRACE_WRITE_KEY'),       // cdp_wk_…: recommendations, widgets, search
+    'secret_key' => getenv('ONETRACE_SECRET_KEY'),     // cdp_sk_…: events and everything else, server only
+    'identity_key' => getenv('ONETRACE_IDENTITY_KEY'), // cdp_ik_…: signs user ids for the tracker, server only
 ]);
 
 $onetrace->events()->track([
@@ -38,14 +39,15 @@ $onetrace->events()->track([
 ]);
 ```
 
-The first argument is the address of your account: `https://cdp.onetrace.pro`, or the domain of your white-label brand. Keys are created in the project under **API keys**. A write key is enough for events; a secret key gets only the permissions chosen when it was created. Keep keys in environment variables and never send a secret key to browsers.
+The first argument is the address of your account: `https://cdp.onetrace.pro`, or the domain of your white-label brand. Keys are created in the project under **API keys**. A write key is enough for events, but a server should send them with the secret key: purchases sent with the public write key do not award loyalty points, and their `userId` is dropped when the project requires signed user ids. The client sends events with the secret key whenever it has one. A secret key gets only the permissions chosen when it was created. Keep keys in environment variables and never send a secret key or the identity key to browsers.
 
 ### Options
 
 | Option | Default | |
 |---|---|---|
 | `write_key` | — | `cdp_wk_…`: events, recommendations, widgets, Web Push |
-| `secret_key` | — | `cdp_sk_…`: all methods (used for events too when there is no write key) |
+| `secret_key` | — | `cdp_sk_…`: all methods; events go with it when it is set |
+| `identity_key` | — | `cdp_ik_…`: the identity key of the project for [signed user ids](#signed-user-ids) |
 | `timeout` | `10` | seconds per request (built-in cURL transport) |
 | `connect_timeout` | `5` | seconds to connect (built-in cURL transport) |
 | `max_retries` | `3` | retries of network errors, `429` and `5xx`; `0` disables |
@@ -96,6 +98,20 @@ $buffer->flush(); // the rest; also sent automatically when the buffer is destro
 ```
 
 In long-running workers call `flush()` yourself. A failed `flush()` throws and keeps the messages; flushing again resends them with the same `messageId`s. Errors of the automatic flush at the end of the script are passed to the callback `buffer(100, function (Throwable $e, array $lost) { … })`, or reported as a PHP warning.
+
+### Signed user ids
+
+The write key is public, so the platform cannot tell whether a `userId` from a browser belongs to the visitor. The website's server signs the id of the signed-in customer, and the tracker passes the signature with every request. Create the identity key in the project under **Website → Connection → Server**; once your website and apps sign user ids, turn on **Require signature** there.
+
+```php
+$hash = $onetrace->userHash($user->id); // HMAC-SHA256 of the id with the identity key, hex; null without identity_key
+```
+
+```html
+<script>cdp.identify(<?= json_encode((string) $user->id) ?>, {}, { userHash: <?= json_encode($hash) ?> });</script>
+```
+
+Events sent with the secret key need no signature. Without a secret key, the client adds `userHash` to events and Web Push subscriptions with a `userId` itself.
 
 ## Profiles
 

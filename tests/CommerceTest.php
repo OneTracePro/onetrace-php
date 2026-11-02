@@ -91,7 +91,7 @@ final class CommerceTest extends TestCase
         }
     }
 
-    public function testSendsConsentsWithTheSecretKeyEvenWhenTheWriteKeyIsSet(): void
+    public function testSendsEventsWithTheSecretKeyEvenWhenTheWriteKeyIsSet(): void
     {
         $transport = new Support\FakeTransport();
         $transport->push(202, ['accepted' => 1, 'duplicates' => 0]);
@@ -103,7 +103,7 @@ final class CommerceTest extends TestCase
         $client->events()->batch([$messages->identify($customer, [Messages::subscribed('email')])]);
         $client->events()->batch([$messages->identify($customer)]);
 
-        self::assertSame(['Bearer cdp_sk_test', 'Bearer cdp_wk_test'], array_map(static function ($request): string {
+        self::assertSame(['Bearer cdp_sk_test', 'Bearer cdp_sk_test'], array_map(static function ($request): string {
             return $request->getHeaders()['Authorization'];
         }, $transport->requests));
     }

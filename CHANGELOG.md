@@ -2,6 +2,12 @@
 
 All notable changes are documented here. The project follows [Semantic Versioning](https://semver.org/).
 
+## 1.17.0 — 2026-11-02
+
+- Signed user ids: the `identity_key` option (`cdp_ik_…`, the identity key of the project under Website → Connection → Server) and `userHash($userId)` — HMAC-SHA256 of the id with the key in hex, for `cdp.identify(id, traits, { userHash })` of the tracker on the page; null without the key. A project that requires the signature drops a user id from the browser or sent with the write key without it.
+- Events go with the secret key when the client has one (before, the write key was preferred): events of the write key do not award loyalty points and lose their `userId` when the project requires signed user ids. With only the write key, events and Web Push subscriptions with a `userId` get `userHash` from the identity key.
+- A key option of spaces only counts as not given.
+
 ## 1.16.0 — 2026-10-24
 
 - `CatalogItem::make()` takes the product `description` (HTML or text, last argument) and `CatalogItem::translate()` its translation: OneTrace AI answers shoppers' questions about the product on its page from the description, attributes and the shop knowledge base («Ask AI»). `CatalogItem::description()` turns HTML into text (paragraphs and list items on their own lines) and keeps at most 5000 characters.
