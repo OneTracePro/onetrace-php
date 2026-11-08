@@ -47,7 +47,7 @@ use Psr\Http\Message\StreamFactoryInterface;
  */
 final class Client
 {
-    public const VERSION = '1.17.0';
+    public const VERSION = '1.18.0';
 
     /**
      * API operations (operationId of the OpenAPI specification) and the methods that call them.

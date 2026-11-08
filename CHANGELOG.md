@@ -2,6 +2,14 @@
 
 All notable changes are documented here. The project follows [Semantic Versioning](https://semver.org/).
 
+## 1.18.0 — 2026-11-08
+
+- Store MCP contract v2 — orders from AI shopping assistants (ChatGPT, Claude …) through the store MCP of OneTrace: handlers of `store_quote_order` (price the items, delivery methods for the address, total, payment methods) and `store_create_order` (place the order, answer with the payment link) in the same `Server` handler list. With both of them the server announces contract version 2, otherwise version 1 and neither order tool is listed.
+- `OrderInput`: the server checks the order arguments before the handler — 1–20 lines, quantity 1–99 (repeated products added up), shipping fields as trimmed strings, country ISO 3166-1 alpha-2, for an order first and last name, country, city, address and `shipping_method` required, comment up to 1000 characters; a wrong argument answers `invalid_input` with what is wrong.
+- `store_create_order` runs only with `onetrace/confirmed` and an `onetrace/idempotency_key`. The `idempotency` option (a `CodeStore`) keeps action results for a day: a repeat with the same key gets the same result without running the handler again, a repeat while the action runs answers `unavailable`, errors are not kept.
+- Guest orders: `store_start_verification` with `purpose: "order"` sends the code to any valid email or phone, also without an account (`sendCode` gets an empty customer id); `store_verify` issues a guest token for it (`CustomerTokens::issueGuest()`, `guest()`; `verify()` never accepts a guest token). A guest passes `store_get_customer` (answered by the server: `{ id: null, email | phone }`) and `store_create_order`; other customer tools answer `auth_required`. Guest codes and tokens work only while `store_create_order` is offered. `Verification::confirm()` returns the customer id or null for a guest and the confirmed address.
+- `Context`: `guestContact`, `isGuest()`, `guestEmail()`, `guestPhone()`; `source` (`chat` or `assistant`) and `assistant` (`chatgpt`, `claude`, `perplexity`, `gemini`, `copilot`, `other`) from `onetrace/source` and `onetrace/assistant` — tag orders with them; `Context::fromMeta()`.
+
 ## 1.17.0 — 2026-11-02
 
 - Signed user ids: the `identity_key` option (`cdp_ik_…`, the identity key of the project under Website → Connection → Server) and `userHash($userId)` — HMAC-SHA256 of the id with the key in hex, for `cdp.identify(id, traits, { userHash })` of the tracker on the page; null without the key. A project that requires the signature drops a user id from the browser or sent with the write key without it.

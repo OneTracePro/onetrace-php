@@ -5,19 +5,29 @@ declare(strict_types=1);
 namespace OneTrace\StoreMcp;
 
 /**
- * MCP server of a store for the OneTrace AI chat bot (store MCP contract v1): checks the platform key, answers
- * initialize, tools/list and tools/call over Streamable HTTP without sessions, checks the customer token for
- * customer tools and the customer's consent for actions. The store only implements the tools it offers:
+ * MCP server of a store for the OneTrace AI chat bot and AI shopping assistants (store MCP contract v1 and v2):
+ * checks the platform key, answers initialize, tools/list and tools/call over Streamable HTTP without sessions,
+ * checks the customer token for customer tools and the customer's consent for actions. The store only implements
+ * the tools it offers:
  *
  *   $server = new Server($platformKey, new CustomerTokens($secret), [
  *       'store_get_customer' => function (array $args, Context $ctx): array { ... },
  *       'store_get_order' => function (array $args, Context $ctx): array { ... },  // $ctx->customerId is confirmed
- *   ], ['name' => 'my-shop', 'verification' => new Verification($codes, $findCustomer, $sendCode)]);
+ *       'store_quote_order' => function (array $args, Context $ctx): array { ... }, // contract v2, $args checked by OrderInput
+ *       'store_create_order' => function (array $args, Context $ctx): array { ... }, // a customer or $ctx->guestContact
+ *   ], ['name' => 'my-shop', 'verification' => new Verification($codes, $findCustomer, $sendCode), 'idempotency' => $codes]);
  *   $server->serve(); // or $server->handle($method, $headers, $body) in a framework
  *
  * A handler returns the result object of the contract or throws ToolError; any other exception answers
  * "unavailable" without details. Options: name, version, enabled (tool names the store owner allowed; null — all
- * implemented), verification (Verification for store_start_verification and store_verify).
+ * implemented), verification (Verification for store_start_verification and store_verify), idempotency (a CodeStore
+ * that keeps action results for a day by their idempotency key: a repeated call gets the same result without
+ * running the handler again).
+ *
+ * The server announces contract version 2 only when both order tools (store_quote_order, store_create_order) have
+ * handlers, otherwise version 1. Guest codes and tokens (store_start_verification with purpose "order") work only
+ * while store_create_order is offered; a guest token passes store_get_customer (answered by the server: id null and
+ * the email or phone) and store_create_order, other customer tools answer auth_required.
  */
 final class Server
 {
@@ -30,7 +40,13 @@ final class Server
     /** @var array<string, callable(array<string, mixed>, Context): array<string, mixed>> */
     private $handlers;
 
-    /** @var array{name: string, version: string, enabled: list<string>|null, verification: Verification|null} */
+    /** Action results are kept this long for repeated calls with the same idempotency key. */
+    private const RESULT_TTL = 86400;
+
+    /** A running action holds its idempotency key this long: a repeat meanwhile answers "unavailable". */
+    private const RUNNING_TTL = 120;
+
+    /** @var array{name: string, version: string, enabled: list<string>|null, verification: Verification|null, idempotency: CodeStore|null} */
     private $options;
 
     /**
@@ -51,7 +67,16 @@ final class Server
             'version' => Values::string($options['version'] ?? null, '1.0.0'),
             'enabled' => isset($options['enabled']) ? array_values(array_filter((array) $options['enabled'], 'is_string')) : null,
             'verification' => ($options['verification'] ?? null) instanceof Verification ? $options['verification'] : null,
+            'idempotency' => ($options['idempotency'] ?? null) instanceof CodeStore ? $options['idempotency'] : null,
         ];
+    }
+
+    /**
+     * The contract version the server announces: 2 with handlers of both order tools, otherwise 1.
+     */
+    public function version(): int
+    {
+        return array_diff(Contract::ORDER_TOOLS, array_keys($this->handlers)) === [] ? 2 : 1;
     }
 
     /**
@@ -65,6 +90,11 @@ final class Server
 
         foreach (array_keys(Contract::tools()) as $name) {
             $implemented = \in_array($name, ['store_start_verification', 'store_verify'], true) ? $this->options['verification'] !== null : isset($this->handlers[$name]);
+
+            // The order tools come together: alone they are not version 2 and the platform cannot use them.
+            if (\in_array($name, Contract::ORDER_TOOLS, true) && $this->version() < 2) {
+                $implemented = false;
+            }
 
             if ($implemented && ($this->options['enabled'] === null || \in_array($name, $this->options['enabled'], true))) {
                 $tools[] = $name;
@@ -106,7 +136,7 @@ final class Server
                 $result = [
                     'protocolVersion' => Contract::PROTOCOL,
                     'serverInfo' => ['name' => $this->options['name'], 'version' => $this->options['version']],
-                    'capabilities' => ['tools' => new \stdClass(), 'experimental' => ['onetrace/store' => ['version' => Contract::VERSION]]],
+                    'capabilities' => ['tools' => new \stdClass(), 'experimental' => ['onetrace/store' => ['version' => $this->version()]]],
                 ];
                 break;
             case 'ping':
@@ -159,17 +189,10 @@ final class Server
         }
 
         $tool = Contract::tools()[$name];
-        $token = \is_string($meta['onetrace/customer_token'] ?? null) ? $meta['onetrace/customer_token'] : null;
-        $context = new Context(
-            $token !== null ? $this->tokens->verify($token) : null,
-            \is_string($meta['onetrace/language'] ?? null) ? $meta['onetrace/language'] : 'en',
-            \is_string($meta['onetrace/conversation'] ?? null) ? $meta['onetrace/conversation'] : null,
-            ($meta['onetrace/confirmed'] ?? false) === true,
-            \is_string($meta['onetrace/idempotency_key'] ?? null) ? $meta['onetrace/idempotency_key'] : null
-        );
+        $context = Context::fromMeta($meta, $this->tokens);
 
         try {
-            if ($tool['auth'] === 'customer' && $context->customerId === null) {
+            if ($tool['auth'] === 'customer' && $context->customerId === null && !($context->isGuest() && \in_array($name, Contract::GUEST_TOOLS, true) && $this->takesOrders())) {
                 throw new ToolError(ToolError::AUTH_REQUIRED, 'Please confirm who you are first.');
             }
 
@@ -177,12 +200,70 @@ final class Server
                 throw new ToolError(ToolError::NOT_ALLOWED, 'The customer has not confirmed this action.');
             }
 
-            return self::result($this->run($name, $arguments, $context), false);
+            if ($name === 'store_create_order' && $context->idempotencyKey === null) {
+                throw new ToolError(ToolError::NOT_ALLOWED, 'An order needs an idempotency key.');
+            }
+
+            if ($name === 'store_quote_order') {
+                $arguments = OrderInput::quote($arguments);
+            } elseif ($name === 'store_create_order') {
+                $arguments = OrderInput::create($arguments);
+            }
+
+            $result = $tool['read_only'] ? $this->run($name, $arguments, $context) : $this->once($name, $arguments, $context);
+
+            return self::result($result, false);
         } catch (ToolError $e) {
             return self::result(['error' => $e->getErrorCode(), 'message' => $e->getMessage()], true);
         } catch (\Throwable $e) {
             return self::result(['error' => ToolError::UNAVAILABLE, 'message' => 'The store could not answer, try again later.'], true);
         }
+    }
+
+    /**
+     * An action once per idempotency key when the idempotency store is set: a repeat gets the kept result, a repeat
+     * while the action runs answers "unavailable". Errors are not kept — a repeat runs again.
+     *
+     * @param array<string, mixed> $arguments
+     *
+     * @return array<string, mixed>
+     */
+    private function once(string $name, array $arguments, Context $context): array
+    {
+        $store = $this->options['idempotency'];
+
+        if ($store === null || $context->idempotencyKey === null) {
+            return $this->run($name, $arguments, $context);
+        }
+
+        $who = $context->customerId !== null ? 'customer:' . $context->customerId : 'guest:' . $context->guestContact;
+        $key = 'onetrace_mcp_action_' . sha1($name . '|' . $who . '|' . $context->idempotencyKey);
+        $saved = $store->get($key);
+
+        if (\is_array($saved['result'] ?? null)) {
+            /** @var array<string, mixed> $result */
+            $result = $saved['result'];
+
+            return $result;
+        }
+
+        if ($saved !== null) {
+            throw new ToolError(ToolError::UNAVAILABLE, 'This request is still being processed, try again in a minute.');
+        }
+
+        $store->put($key, ['running' => true], self::RUNNING_TTL);
+
+        try {
+            $result = $this->run($name, $arguments, $context);
+        } catch (\Throwable $e) {
+            $store->delete($key);
+
+            throw $e;
+        }
+
+        $store->put($key, ['result' => $result], self::RESULT_TTL);
+
+        return $result;
     }
 
     /**
@@ -193,18 +274,40 @@ final class Server
     private function run(string $name, array $arguments, Context $context): array
     {
         $verification = $this->options['verification'];
+        // Guest codes only while the store takes orders here (contract v2): otherwise the purpose is ignored.
+        $guests = $this->takesOrders();
 
         if ($name === 'store_start_verification' && $verification !== null) {
-            return $verification->start(Values::string($arguments['contact'] ?? null), isset($arguments['order']) ? Values::string($arguments['order']) : null);
+            $purpose = isset($arguments['purpose']) ? Values::string($arguments['purpose']) : null;
+
+            return $verification->start(Values::string($arguments['contact'] ?? null), isset($arguments['order']) ? Values::string($arguments['order']) : null, $purpose === Verification::PURPOSE_ORDER && !$guests ? null : $purpose);
         }
 
         if ($name === 'store_verify' && $verification !== null) {
-            $token = $this->tokens->issue($verification->verify(Values::string($arguments['contact'] ?? null), Values::string($arguments['code'] ?? null)));
+            $confirmed = $verification->confirm(Values::string($arguments['contact'] ?? null), Values::string($arguments['code'] ?? null));
+
+            if ($confirmed['customer_id'] === null && !$guests) {
+                throw new ToolError(ToolError::INVALID_CODE, 'The code is wrong or expired.');
+            }
+
+            $token = $confirmed['customer_id'] !== null ? $this->tokens->issue($confirmed['customer_id']) : $this->tokens->issueGuest($confirmed['contact']);
 
             return ['customer_token' => $token, 'expires_at' => CustomerTokens::expiresAt($token)];
         }
 
+        if ($name === 'store_get_customer' && $context->isGuest()) {
+            return ['id' => null, ($context->guestEmail() !== null ? 'email' : 'phone') => $context->guestContact];
+        }
+
         return ($this->handlers[$name])($arguments, $context);
+    }
+
+    /**
+     * Whether store_create_order is offered: only then guests get codes and tokens and may call customer tools.
+     */
+    private function takesOrders(): bool
+    {
+        return \in_array('store_create_order', $this->tools(), true);
     }
 
     /**
