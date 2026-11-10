@@ -195,6 +195,33 @@ final class RequesterTest extends TestCase
         self::assertSame(['q' => 'red dress under 50', 'correct' => '0', 'ignore' => ['price'], 'brand' => ['Contoso'], 'attr' => ['season' => 'winter']], $query);
     }
 
+    public function testAiSearchWaitsForTheParseOfTheQueueWithTheSameResultsParameters(): void
+    {
+        $transport = (new FakeTransport())
+            ->push(202, ['pending' => true, 'id' => str_repeat('t', 40)])
+            ->push(202, ['pending' => true])
+            ->push(200, ['items' => [['id' => 'SKU-1']], 'total' => 1, 'ai' => ['understood' => [], 'refinements' => [], 'relaxed' => 0, 'state' => ['text' => 'coat']]]);
+
+        $result = $this->client($transport)->search()->ai('warm coat', ['page' => 2, 'per_page' => 12, 'previous' => ['text' => 'coat'], 'all' => true], 2.0, 0.01);
+
+        self::assertSame('SKU-1', $result['items'][0]['id']);
+        self::assertSame(['q' => 'warm coat', 'page' => 2, 'per_page' => 12, 'previous' => ['text' => 'coat'], 'all' => true], json_decode((string) $transport->requests[0]->getBody(), true));
+        parse_str((string) parse_url($transport->last()->getUrl(), PHP_URL_QUERY), $query);
+        self::assertSame(['id' => str_repeat('t', 40), 'q' => 'warm coat', 'page' => '2', 'per_page' => '12', 'all' => '1'], $query);
+        self::assertStringContainsString('/search/ai/result', $transport->last()->getUrl());
+    }
+
+    public function testAiSearchGivesUpAfterTheWait(): void
+    {
+        $transport = (new FakeTransport())->push(202, ['pending' => true, 'id' => str_repeat('t', 40)]);
+
+        self::assertSame(['ai' => null, 'reason' => 'timeout'], $this->client($transport)->search()->ai('warm coat', [], 0.0));
+        self::assertCount(1, $transport->requests);
+
+        $transport = (new FakeTransport())->push(200, ['ai' => null]);
+        self::assertSame(['ai' => null], $this->client($transport)->search()->ai('coat'));
+    }
+
     public function testRateLimitExceptionReadsRetryAfter(): void
     {
         $transport = (new FakeTransport())->push(429, ['message' => 'Slow down'], ['Retry-After' => '30']);

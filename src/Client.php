@@ -47,7 +47,7 @@ use Psr\Http\Message\StreamFactoryInterface;
  */
 final class Client
 {
-    public const VERSION = '1.18.0';
+    public const VERSION = '1.19.0';
 
     /**
      * API operations (operationId of the OpenAPI specification) and the methods that call them.
@@ -64,6 +64,7 @@ final class Client
         'recommendations.get' => 'recommendations.get',
         'widgets.get' => 'widgets.get',
         'search.products' => 'search.products',
+        'search.ai' => 'search.ai',
         'search.suggest' => 'search.suggest',
         'search.widget' => 'search.widget',
         'meta.openapi' => 'openApi',

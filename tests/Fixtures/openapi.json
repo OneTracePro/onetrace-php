@@ -4809,6 +4809,360 @@
         }
       }
     },
+    "/search/ai": {
+      "post": {
+        "operationId": "search.ai",
+        "summary": "AI search",
+        "tags": [
+          "search"
+        ],
+        "description": "AI search (ADR-195): the shopper's query in plain words is parsed by AI into catalog filters — categories, brands, attributes, price, exclusions, sorting — and the results come with the chips of what AI understood and follow-up refinements. Used only when the AI search mode of the project wants it for the query (off, auto for descriptive queries, toggle, always); otherwise `{ai: null}` and the usual results stay. A parse from the cache comes at once; otherwise 202 with `id` — get the results with `GET /search/ai/result`. AI filters that find nothing are relaxed step by step. Charged to the project balance by tokens; limited per visitor (10 model parses a minute, 100 a day). Counts as a search request.\n\nUsed by the search widget of the tracker; not part of the SDKs.",
+        "security": [
+          {
+            "writeKey": []
+          },
+          {
+            "secretKey": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "q"
+                ],
+                "properties": {
+                  "q": {
+                    "type": "string",
+                    "maxLength": 200
+                  },
+                  "previous": {
+                    "type": "object",
+                    "description": "`ai.state` of the previous answer: the query refines it (\"cheaper\", \"only Michelin\")"
+                  },
+                  "state": {
+                    "type": "object",
+                    "description": "`ai.state` to search by without the model (a removed chip of what AI understood, the next page); checked against the catalog like a model answer"
+                  },
+                  "asked": {
+                    "type": "boolean",
+                    "description": "The shopper turned on \"Ask AI\" (toggle mode)"
+                  },
+                  "sort": {
+                    "type": "string",
+                    "enum": [
+                      "relevance",
+                      "popular",
+                      "price_asc",
+                      "price_desc"
+                    ],
+                    "description": "Sorting chosen by the shopper; relevance — the sorting AI understood"
+                  },
+                  "anonymousId": {
+                    "type": "string",
+                    "maxLength": 255
+                  },
+                  "language": {
+                    "type": "string",
+                    "maxLength": 35
+                  },
+                  "page": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 100
+                  },
+                  "per_page": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "image_width": {
+                    "type": "integer",
+                    "minimum": 64,
+                    "maximum": 1200
+                  },
+                  "all": {
+                    "type": "boolean"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Results by the AI parse, or `{ai: null}`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "request_id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "query": {
+                      "type": "string"
+                    },
+                    "total": {
+                      "type": "integer"
+                    },
+                    "page": {
+                      "type": "integer"
+                    },
+                    "per_page": {
+                      "type": "integer"
+                    },
+                    "relaxed": {
+                      "type": "boolean",
+                      "description": "Nothing matched all words: products matching any word."
+                    },
+                    "personalized": {
+                      "type": "boolean"
+                    },
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "allOf": [
+                          {
+                            "$ref": "#/components/schemas/ProductCard"
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "available": {
+                                "type": "boolean"
+                              }
+                            }
+                          }
+                        ]
+                      }
+                    },
+                    "facets": {
+                      "type": "object",
+                      "properties": {
+                        "categories": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string"
+                              },
+                              "count": {
+                                "type": "integer"
+                              }
+                            }
+                          }
+                        },
+                        "brands": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "name": {
+                                "type": "string"
+                              },
+                              "count": {
+                                "type": "integer"
+                              }
+                            }
+                          }
+                        },
+                        "price": {
+                          "type": "object",
+                          "properties": {
+                            "min": {
+                              "type": [
+                                "number",
+                                "null"
+                              ]
+                            },
+                            "max": {
+                              "type": [
+                                "number",
+                                "null"
+                              ]
+                            }
+                          }
+                        },
+                        "attributes": {
+                          "type": "array",
+                          "description": "Characteristics of the store industry with values and product counts; values go to `attr[key]`.",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "key": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string"
+                              },
+                              "values": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "value": {
+                                      "type": "string"
+                                    },
+                                    "label": {
+                                      "type": "string"
+                                    },
+                                    "count": {
+                                      "type": "integer"
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "redirect": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "format": "uri",
+                      "description": "Redirect rule of the query (Site → Search): the page to open instead of the results, or null."
+                    },
+                    "filters": {
+                      "type": "object",
+                      "description": "Filters recognized in the query text and applied: sizes and characteristics of the store industry (“205/55 r16 winter” → tire_width, tire_profile, rim_diameter, season), catalog values of text characteristics (“red dress” → color), price_min / price_max (“under 3000”, “from 1000 to 2000” in the 10 interface languages) and brand (a catalog brand in the text). Empty when nothing was recognized or nothing matched them (then the text is searched as typed).",
+                      "additionalProperties": {
+                        "type": [
+                          "string",
+                          "number",
+                          "boolean"
+                        ]
+                      }
+                    },
+                    "corrected": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "description": "The query with corrected typos when the typed one found nothing (or only loosely) and the corrected one found products: the items are its results."
+                    },
+                    "suggestion": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "description": "“Did you mean”: the corrected query when nothing was found or only some of the words matched (and nothing was found by meaning); null otherwise."
+                    },
+                    "learned": {
+                      "type": "boolean",
+                      "description": "The order of the first results takes into account which products visitors clicked and bought for this query (learned daily)."
+                    },
+                    "semantic": {
+                      "type": "boolean",
+                      "description": "The results include products found by meaning (vector search): for a descriptive query, or when the words of the query found nothing or only some of them matched."
+                    },
+                    "ai": {
+                      "type": "object",
+                      "nullable": true,
+                      "description": "What AI understood (null — usual results stay)",
+                      "properties": {
+                        "understood": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "type": {
+                                "type": "string",
+                                "enum": [
+                                  "category",
+                                  "brand",
+                                  "attribute",
+                                  "exclude",
+                                  "price"
+                                ]
+                              },
+                              "key": {
+                                "type": "string"
+                              },
+                              "label": {
+                                "type": "string"
+                              }
+                            }
+                          }
+                        },
+                        "refinements": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          },
+                          "description": "Short follow-up queries for chips"
+                        },
+                        "relaxed": {
+                          "type": "integer",
+                          "description": "0 — all AI filters applied; 1 — without attributes and exclusions; 2 — text and price; 3 — the original text"
+                        },
+                        "cached": {
+                          "type": "boolean"
+                        },
+                        "state": {
+                          "type": "object",
+                          "description": "Parsed state; send it back as `previous` with a follow-up query"
+                        }
+                      }
+                    },
+                    "reason": {
+                      "type": "string",
+                      "description": "Why AI was not used: plan, balance, spend_limit, disabled, not_configured, too_many, failed, expired"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "202": {
+            "description": "The model is parsing the query",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "pending": {
+                      "type": "boolean"
+                    },
+                    "id": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "Search quota exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    },
+                    "reason": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/search/suggest": {
       "get": {
         "operationId": "search.suggest",

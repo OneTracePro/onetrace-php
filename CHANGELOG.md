@@ -2,6 +2,10 @@
 
 All notable changes are documented here. The project follows [Semantic Versioning](https://semver.org/).
 
+## 1.19.0 — 2026-11-11
+
+- AI search: `search()->ai($query, $params, $wait = 2.5)` — the model reads the shopper's query as catalog filters (category, brands, characteristics, price, words to exclude, sorting) and the results are found by them, answered like `products()` plus `ai` (`understood` — chips of what AI applied, `refinements`, `relaxed`, `state`). A parse not in the cache is made in a queue: the method polls the result up to `$wait` seconds. `['ai' => null, 'reason' => …]` — search with `products()`: the AI search mode of the project does not want the query (not counted towards the search limit), AI is not available, the visitor asks too often or the wait ran out (`timeout`). `previous` refines the previous results ("cheaper"), `state` searches by a parse without the model (a removed chip, the next page), `asked` — the shopper pressed "Ask AI".
+
 ## 1.18.0 — 2026-11-08
 
 - Store MCP contract v2 — orders from AI shopping assistants (ChatGPT, Claude …) through the store MCP of OneTrace: handlers of `store_quote_order` (price the items, delivery methods for the address, total, payment methods) and `store_create_order` (place the order, answer with the payment link) in the same `Server` handler list. With both of them the server announces contract version 2, otherwise version 1 and neither order tool is listed.

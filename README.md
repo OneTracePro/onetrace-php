@@ -194,11 +194,15 @@ $result = $onetrace->search()->products('linen dress', [
 
 $onetrace->search()->products('red dress under 50', ['correct' => false, 'ignore' => ['price'], 'attr' => ['season' => 'winter']]);
 
+// AI search: the query in plain words → catalog filters; waits up to 2.5 s for the parse, ai: null — use products()
+$ai = $onetrace->search()->ai('warm coat for winter under 150, not black', ['anonymousId' => $visitorId, 'per_page' => 24]);
+$result = $ai['ai'] !== null ? $ai : $onetrace->search()->products('warm coat for winter under 150, not black', ['anonymousId' => $visitorId]);
+
 $hints = $onetrace->search()->suggest('lin'); // products, categories, popular queries
 $widget = $onetrace->search()->widget('de'); // search widget settings of Site → Search: enabled, cart_url, texts
 ```
 
-Word forms, typos and a query typed in the wrong keyboard layout are understood; with `anonymousId` (the tracker visitor id) the first results follow the visitor's interests. The plan of the project must include product search, and search requests count towards its monthly limit: over it the API answers 402 and `PaymentRequiredException::getReason()` is `quota_exceeded` — show the search of your website. With the search widget on, a results page can be just `<div data-cdp-search-results data-cart-url="/cart/add/{id}"></div>`: the tracker draws the results, facets and an "Add to cart" button that posts to your address and expects `{"ok": true}` or `{"redirect": "…"}`. A shop that renders the results page itself sends the `search` event once per query: `(new Messages('myshop', $url))->search($customer, $query, $result['total'])`.
+Word forms, typos and a query typed in the wrong keyboard layout are understood; with `anonymousId` (the tracker visitor id) the first results follow the visitor's interests. The plan of the project must include product search, and search requests count towards its monthly limit: over it the API answers 402 and `PaymentRequiredException::getReason()` is `quota_exceeded` — show the search of your website. With the search widget on, a results page can be just `<div data-cdp-search-results data-cart-url="/cart/add/{id}"></div>`: the tracker draws the results, facets and an "Add to cart" button that posts to your address and expects `{"ok": true}` or `{"redirect": "…"}`. A shop that renders the results page itself sends the `search` event once per query: `(new Messages('myshop', $url))->search($customer, $query, $result['total'])`. With AI results, put `<div data-cdp-search-ai="…"></div>` above the products — an HTML-escaped JSON of `url` (the first results page), `turns` (the query, and the refinement if any), `state`, `understood`, `refinements`, `relaxed` from `ai` and `products` (ids in order): the tracker writes the short AI answer there and draws the chips; a removed chip, a refinement and "Regular search" open `url` with `ai_state`, `ai_refine` + `ai_previous` (base64url JSON) or `ai=0`, pass them back as `state`, the query and `previous`.
 
 ## Segments, journeys and campaigns
 

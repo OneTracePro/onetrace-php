@@ -56,6 +56,57 @@ final class Search extends Resource
     }
 
     /**
+     * ai('warm coat under 150, not black', ['anonymousId' => $visitor, 'per_page' => 24]): AI search — the model reads
+     * the query as catalog filters (category, brands, characteristics, price, words to exclude, sorting) and the
+     * results are found by them, as products() answers, plus `ai`: understood (chips of what AI applied: type, key,
+     * label), refinements (suggested follow-ups), relaxed (0 — everything applied, more — filters were dropped to find
+     * something), state (the whole parse). A parse not in the cache is made in a queue: the method waits up to $wait
+     * seconds polling the result, then gives up.
+     *
+     * `['ai' => null, 'reason' => …]` — use products(): the AI search mode of the project does not want this query
+     * (such answers do not count towards the search limit), AI is not available (reason: plan, balance …),
+     * the visitor asks too often (too_many) or the parse took longer than $wait (timeout).
+     *
+     * previous — `ai.state` of the previous results: the query refines them ("cheaper", "only Michelin");
+     * state — search by this parse without the model (a chip removed, the next page); asked — the shopper pressed
+     * "Ask AI" (the toggle mode of the project).
+     *
+     * @param array{previous?: array<string, mixed>, state?: array<string, mixed>, asked?: bool, sort?: string, page?: int, per_page?: int, all?: bool, anonymousId?: string, image_width?: int, language?: string} $params
+     *
+     * @return array<string, mixed>
+     */
+    public function ai(string $query, array $params = [], float $wait = 2.5, float $interval = 0.3): array
+    {
+        $deadline = microtime(true) + max(0.0, $wait);
+        $result = $this->requester->request('POST', '/search/ai', [
+            'auth' => Requester::AUTH_WRITE,
+            'json' => ['q' => $query] + $params,
+        ]);
+        $id = $result['id'] ?? null;
+
+        while (!empty($result['pending']) && \is_string($id)) {
+            if (microtime(true) + $interval > $deadline) {
+                return ['ai' => null, 'reason' => 'timeout'];
+            }
+
+            usleep((int) ($interval * 1000000));
+            // The result is read with the same results parameters: the page, its size and the language.
+            $parameters = ['id' => $id, 'q' => $query] + array_diff_key($params, ['previous' => true, 'state' => true, 'asked' => true]);
+
+            if (isset($parameters['all'])) {
+                $parameters['all'] = $parameters['all'] ? 1 : 0;
+            }
+
+            $result = $this->requester->request('GET', '/search/ai/result', [
+                'auth' => Requester::AUTH_WRITE,
+                'query' => $parameters,
+            ]);
+        }
+
+        return \array_key_exists('ai', $result) ? $result : ['ai' => null] + $result;
+    }
+
+    /**
      * suggest('lin'): products by the beginning of words, categories by name and popular queries of the website;
      * redirect — the address of a search rule, corrected — the suggestions are for this corrected query.
      *
@@ -78,13 +129,15 @@ final class Search extends Resource
      * widget('de'): the search widget settings of the website (Site → Search in OneTrace). enabled: false — the widget
      * is off; otherwise the tracker draws the search layer and the results widget, and a store can put
      * <div data-cdp-search-results data-cart-url="…"> on its search page instead of its own results. cart_url — the
-     * add-to-cart address from the settings ({id} — the catalog product id), texts — in the visitor's language.
+     * add-to-cart address from the settings ({id} — the catalog product id), texts — in the visitor's language;
+     * ai — the AI search mode of the project (null — off), also with the widget off (then only the texts of the AI
+     * block above the results of the store come).
      *
-     * @return array{enabled: bool, selector?: string|null, results_url?: string|null, category_url?: string|null, cart_url?: string|null, sections?: array<string, bool>, accent?: string, radius?: int, columns?: int, ratio?: string, voice?: bool, texts?: array<string, string>}
+     * @return array{enabled: bool, selector?: string|null, results_url?: string|null, category_url?: string|null, cart_url?: string|null, sections?: array<string, bool>, accent?: string, radius?: int, columns?: int, ratio?: string, voice?: bool, ai?: array{mode: string, answer: bool}|null, texts?: array<string, string>}
      */
     public function widget(?string $language = null): array
     {
-        /** @var array{enabled: bool, selector?: string|null, results_url?: string|null, category_url?: string|null, cart_url?: string|null, sections?: array<string, bool>, accent?: string, radius?: int, columns?: int, ratio?: string, voice?: bool, texts?: array<string, string>} $result */
+        /** @var array{enabled: bool, selector?: string|null, results_url?: string|null, category_url?: string|null, cart_url?: string|null, sections?: array<string, bool>, accent?: string, radius?: int, columns?: int, ratio?: string, voice?: bool, ai?: array{mode: string, answer: bool}|null, texts?: array<string, string>} $result */
         $result = $this->requester->request('GET', '/search/widget', [
             'auth' => Requester::AUTH_WRITE,
             'query' => $language !== null ? ['language' => $language] : [],
